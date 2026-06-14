@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a587f6266195b8b4ba92bb526344c1e2, type: 3}
+  m_Name: Asset_Plant
+  m_EditorClassIdentifier: Assembly-CSharp::PlacementSystem.AssetData
+  displayName: Plant
+  prefab: {fileID: 6699689624714749698, guid: a4b88fe8633de174b9f4765daa3eca80, type: 3}
+  icon: {fileID: 0}
+  categoryRef: {fileID: 11400000, guid: 2e9ea4f704eeca24294dc5b7a09db04e, type: 2}
