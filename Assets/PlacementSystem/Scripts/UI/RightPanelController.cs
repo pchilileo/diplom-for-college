@@ -26,22 +26,13 @@ namespace PlacementSystem
         private void Awake()
         {
             if (positionFields != null)
-            {
-                positionFields.SetStep(0.1f);
                 positionFields.Bind(ApplyPosition);
-            }
 
             if (rotationFields != null)
-            {
-                rotationFields.SetStep(1f);
                 rotationFields.Bind(ApplyRotation);
-            }
 
             if (scaleFields != null)
-            {
-                scaleFields.SetStep(0.1f);
                 scaleFields.BindScale(ApplyScale);
-            }
 
             if (translateModeButton != null)
                 translateModeButton.onClick.AddListener(() => SetGizmoMode(GizmoMode.Translate));

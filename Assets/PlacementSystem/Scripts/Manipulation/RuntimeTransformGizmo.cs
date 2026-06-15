@@ -1,6 +1,7 @@
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
+using UnityEngine.UI;
 #endif
 
 namespace PlacementSystem
@@ -79,6 +80,8 @@ namespace PlacementSystem
             if (target == null)
                 return;
 
+            HandleModeSwitch();
+            
             if (isDragging)
             {
                 if (IsPrimaryHeld())
@@ -86,6 +89,30 @@ namespace PlacementSystem
                 else
                     EndDrag();
             }
+        }
+        
+        private void HandleModeSwitch()
+        {
+            #if ENABLE_INPUT_SYSTEM
+                var keyboard = Keyboard.current;
+                if (keyboard == null)
+                    return;
+
+                if (keyboard.rKey.wasPressedThisFrame)
+                    SetMode(GizmoMode.Rotate);
+                else if (keyboard.tKey.wasPressedThisFrame)
+                    SetMode(GizmoMode.Translate);
+                    
+            #else
+                if (Input.GetKeyDown(KeyCode.R))
+                {
+                    SetMode(GizmoMode.Rotate);
+                }
+                else if (Input.GetKeyDown(KeyCode.T))
+                {
+                    SetMode(GizmoMode.Translate);
+                }
+            #endif
         }
 
         private void OnDrawGizmos()
@@ -96,17 +123,20 @@ namespace PlacementSystem
             var origin = target.transform.position;
             var size = HandleWorldSize(origin);
 
-            Gizmos.color = Color.red;
-            Gizmos.DrawLine(origin, origin + Vector3.right * size);
-            Gizmos.color = Color.green;
-            Gizmos.DrawLine(origin, origin + Vector3.up * size);
-            Gizmos.color = Color.blue;
-            Gizmos.DrawLine(origin, origin + Vector3.forward * size);
-
-            if (mode == GizmoMode.Rotate)
+            switch (mode)
             {
-                Gizmos.color = Color.yellow;
-                DrawCircle(origin, size * 1.2f, Vector3.up, 32);
+                case GizmoMode.Translate:
+                    Gizmos.color = Color.red;
+                    Gizmos.DrawLine(origin, origin + Vector3.right * size);
+                    Gizmos.color = Color.green;
+                    Gizmos.DrawLine(origin, origin + Vector3.up * size);
+                    Gizmos.color = Color.blue;
+                    Gizmos.DrawLine(origin, origin + Vector3.forward * size);
+                    break;
+                case GizmoMode.Rotate:
+                    Gizmos.color = Color.yellow;
+                    DrawCircle(origin, size * 1.2f, Vector3.up, 32);
+                    break;
             }
         }
 

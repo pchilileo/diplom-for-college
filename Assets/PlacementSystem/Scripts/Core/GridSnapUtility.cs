@@ -13,9 +13,9 @@ namespace PlacementSystem
         public static GridSnapSettings Default => new()
         {
             enablePositionSnap = true,
-            positionStep = 0.5f,
+            positionStep = 0.01f,
             enableRotationSnap = true,
-            rotationStep = 15f
+            rotationStep = 1f
         };
 
         public Vector3 SnapPosition(Vector3 position)
