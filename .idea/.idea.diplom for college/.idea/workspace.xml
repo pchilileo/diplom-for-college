@@ -31,6 +31,7 @@
     <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/UI/Core/InputField.cs" root0="SKIP_HIGHLIGHTING" />
     <setting file="file://$PROJECT_DIR$/Library/PackageCache/com.unity.ugui@d8a2716f3013/Runtime/UGUI/UI/Core/Layout/HorizontalOrVerticalLayoutGroup.cs" root0="SKIP_HIGHLIGHTING" />
   </component>
+  <component name="MetaFilesCheckinStateConfiguration" checkMetaFiles="true" />
   <component name="ProjectColorInfo"><![CDATA[{
   "associatedIndex": 1,
   "fromUser": false
@@ -107,13 +108,14 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1782247066319</updated>
-      <workItem from="1782247075415" duration="2265000" />
+      <workItem from="1782247075415" duration="2649000" />
     </task>
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
     <option name="version" value="3" />
   </component>
+  <component name="UnityCheckinConfiguration" checkUnsavedScenes="true" />
   <component name="UnityProjectConfiguration" hasMinimizedUI="true" />
   <component name="UnityProjectDiscoverer">
     <option name="hasUnityReference" value="true" />

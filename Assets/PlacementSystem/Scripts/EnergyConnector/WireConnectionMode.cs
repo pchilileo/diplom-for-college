@@ -85,26 +85,19 @@ namespace PlacementSystem
 
         // ── Mode toggle ───────────────────────────────────────────────────────
 
+        // Key handling is delegated to EditorModeManager (keys 1/2/3).
+        // These public entry-points are called by that manager.
+
+        /// <summary>Activate wire-connection mode. Called by <see cref="EditorModeManager"/>.</summary>
+        public void ForceActivate()
+        {
+            if (!isActive)
+                Activate();
+        }
+
         private void HandleModeToggle()
         {
-            var pressed = false;
-
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.digit2Key.wasPressedThisFrame)
-                pressed = true;
-#else
-            if (Input.GetKeyDown(KeyCode.Alpha2))
-                pressed = true;
-#endif
-
-            if (!pressed)
-                return;
-
-            if (isActive)
-                Deactivate();
-            else
-                Activate();
+            // Intentionally empty — EditorModeManager owns all mode-key logic.
         }
 
         /// <summary>Called by WireDeleteMode to mutually exclude modes.</summary>
