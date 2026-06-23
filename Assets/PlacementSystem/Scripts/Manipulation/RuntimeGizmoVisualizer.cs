@@ -26,11 +26,11 @@ namespace PlacementSystem
         [SerializeField] private RuntimeTransformGizmo gizmo;
 
         [Tooltip("Width of gizmo lines in world units.")]
-        [SerializeField] private float lineWidth = 0.04f;
+        [SerializeField] private float lineWidth = 0.07f;
 
         [Tooltip("Fixed screen-space length of each arrow in pixels. " +
                  "Arrows are always this size regardless of distance.")]
-        [SerializeField] private float arrowScreenLength = 80f;
+        [SerializeField] private float arrowScreenLength = 110f;
 
         [Tooltip("Name of the Layer used exclusively for gizmo objects. " +
                  "Create this layer in Edit ▸ Project Settings ▸ Tags and Layers.")]
@@ -148,16 +148,30 @@ namespace PlacementSystem
 
             var line = go.AddComponent<LineRenderer>();
 
-            // "Sprites/Default" renders without depth testing by default,
-            // but with the overlay camera we always win on depth anyway.
-            var mat = new Material(Shader.Find("Sprites/Default"));
-            mat.renderQueue = 4000; // after geometry, before UI
+            // Build a material that always passes the depth test (ZTest Always)
+            // so the gizmo is visible through any geometry.
+            // We try the GUI/Text Shader first (guaranteed ZTest Always in Unity built-ins),
+            // falling back to Sprites/Default which also disables depth write by default.
+            var shader = Shader.Find("GUI/Text Shader") ?? Shader.Find("Sprites/Default");
+            var mat = new Material(shader);
+
+            // Force ZTest Always regardless of shader — works on Standard, URP and HDRP
+            mat.SetInt("unity_GUIZTestMode", (int)UnityEngine.Rendering.CompareFunction.Always);
+            mat.renderQueue = 4500; // well above geometry (3000) and particles, below UI (5000+)
+            mat.color = color;
             line.material = mat;
 
-            line.startColor    = color;
-            line.endColor      = color;
+            // Brighter colors — multiply original by 1.4 clamped to HDR range
+            var bright = new Color(
+                Mathf.Min(color.r * 1.4f, 1f),
+                Mathf.Min(color.g * 1.4f, 1f),
+                Mathf.Min(color.b * 1.4f, 1f),
+                1f);
+
+            line.startColor    = bright;
+            line.endColor      = bright;
             line.startWidth    = lineWidth;
-            line.endWidth      = lineWidth;
+            line.endWidth      = lineWidth * 0.35f; // tapered toward tip — looks like an arrow shaft
             line.useWorldSpace = true;
             line.loop          = loop;
             line.positionCount = loop ? 49 : 2;

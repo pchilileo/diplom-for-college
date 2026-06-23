@@ -1,9 +1,10 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace PlacementSystem
 {
-    [DisallowMultipleComponent]
+    [DisallowMultipleComponent] [RequireComponent(typeof(MeshCollider), typeof(MeshRenderer), typeof(MeshCollider))]
     public class PlacedObject : MonoBehaviour
     {
         [SerializeField] private string objectId;
@@ -22,16 +23,41 @@ namespace PlacementSystem
 
         public event Action<PlacedObject> TransformChanged;
 
+        /// <summary>
+        /// Fired when a wire connection is added or removed on any of this object's connectors.
+        /// Subscribe to keep external systems (UI, save data, etc.) in sync.
+        /// </summary>
+        public event Action<PlacedObject> ConnectionsChanged;
+
+        // Cached list of EnergyConnector children — populated lazily on first access.
+        private List<EnergyConnector> cachedConnectors;
+
+        /// <summary>All EnergyConnector points that belong to this object.</summary>
+        public IReadOnlyList<EnergyConnector> Connectors
+        {
+            get
+            {
+                if (cachedConnectors == null)
+                    RebuildConnectorCache();
+                return cachedConnectors;
+            }
+        }
+
         // ── Lifecycle ──────────────────────────────────────────────────────────
 
         private void Awake()
         {
+            Transform modelTransform = transform.Find("Model");
+            Mesh modelMesh = modelTransform.GetComponent<MeshFilter>().mesh; 
+            GetComponent<MeshCollider>().sharedMesh = modelMesh;
             CacheRenderers();
         }
 
         private void OnDestroy()
         {
-            TransformChanged = null;
+            TransformChanged   = null;
+            ConnectionsChanged = null;
+            // EnergyConnector.OnDestroy handles wire cleanup for each connector.
         }
 
         // ── Public API ─────────────────────────────────────────────────────────
@@ -44,11 +70,32 @@ namespace PlacementSystem
 
             // Re-cache after prefab is fully initialised
             CacheRenderers();
+            RebuildConnectorCache();
         }
 
         public void NotifyTransformChanged()
         {
             TransformChanged?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Called by <see cref="WireConnectionMode"/> whenever a wire is added or
+        /// removed. Fires <see cref="ConnectionsChanged"/> so listeners can react.
+        /// </summary>
+        public void NotifyConnectionsChanged()
+        {
+            ConnectionsChanged?.Invoke(this);
+        }
+
+        /// <summary>
+        /// Forces a rebuild of the connector cache. Call this if connectors are
+        /// added or removed from the hierarchy at runtime.
+        /// </summary>
+        public void RebuildConnectorCache()
+        {
+            cachedConnectors ??= new List<EnergyConnector>();
+            cachedConnectors.Clear();
+            GetComponentsInChildren(cachedConnectors);
         }
 
         /// <summary>

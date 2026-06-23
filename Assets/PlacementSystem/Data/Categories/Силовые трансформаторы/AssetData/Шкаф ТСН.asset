@@ -13,6 +13,6 @@ MonoBehaviour:
   m_Name: "\u0428\u043A\u0430\u0444 \u0422\u0421\u041D"
   m_EditorClassIdentifier: Assembly-CSharp::PlacementSystem.AssetData
   displayName: "\u0428\u043A\u0430\u0444 \u0422\u0421\u041D"
-  prefab: {fileID: 919132149155446097, guid: 412fe04e10793a94395bd0208eb4fe6f, type: 3}
+  prefab: {fileID: 1129095260512710052, guid: 2375c911e55c3a949bc23cb90f923ed5, type: 3}
   icon: {fileID: 0}
   categoryRef: {fileID: 11400000, guid: e4188a875ad212c449eabb3582c764f2, type: 2}

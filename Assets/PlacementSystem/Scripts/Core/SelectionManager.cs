@@ -33,7 +33,7 @@ namespace PlacementSystem
 
         private void Update()
         {
-            if (InteractionLock.IsDraggingAsset || InteractionLock.IsEditingInspector)
+            if (InteractionLock.ShouldBlockSelection || InteractionLock.IsEditingInspector)
                 return;
 
             if (transformGizmo != null && transformGizmo.IsDragging)
