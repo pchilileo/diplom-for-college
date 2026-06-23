@@ -41,6 +41,10 @@ namespace PlacementSystem
         // ── Runtime state ─────────────────────────────────────────────────────
 
         private bool isActive;
+        private WireDeleteMode _deleteMode;
+
+        /// <summary>True while wire-connection mode is active. Read by WireDeleteMode for mutual exclusion.</summary>
+        public bool IsActive => isActive;
         private EnergyConnector firstConnector;
 
         // All connectors found in the scene (refreshed each time mode activates)
@@ -103,8 +107,20 @@ namespace PlacementSystem
                 Activate();
         }
 
+        /// <summary>Called by WireDeleteMode to mutually exclude modes.</summary>
+        public void ForceDeactivate()
+        {
+            if (isActive)
+                Deactivate();
+        }
+
         private void Activate()
         {
+            // Deactivate delete mode if it's running
+            if (_deleteMode == null)
+                _deleteMode = FindAnyObjectByType<WireDeleteMode>();
+            _deleteMode?.ForceDeactivate();
+
             isActive = true;
             firstConnector = null;
 

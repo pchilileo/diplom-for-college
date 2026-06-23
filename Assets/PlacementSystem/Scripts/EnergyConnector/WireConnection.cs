@@ -87,6 +87,22 @@ namespace PlacementSystem
                 Destroy(gameObject);
         }
 
+        /// <summary>
+        /// Resets the LineRenderer colors back to the wire's configured <see cref="wireColor"/>.
+        /// Called by <see cref="WireDeleteMode"/> when exiting delete mode.
+        /// </summary>
+        public void RestoreDefaultColor()
+        {
+            if (line == null)
+                return;
+
+            line.startColor = wireColor;
+            line.endColor   = wireColor;
+
+            if (line.material != null)
+                line.material.color = wireColor;
+        }
+
         // ── Catenary curve ────────────────────────────────────────────────────
 
         /// <summary>
