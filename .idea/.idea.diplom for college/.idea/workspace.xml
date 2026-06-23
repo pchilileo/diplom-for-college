@@ -1,9 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="CMakeProjectFlavorService">
+    <option name="flavorId" value="CMakePlainProjectFlavor" />
+  </component>
+  <component name="CMakeSettings">
+    <configurations />
+  </component>
   <component name="ChangeListManager">
     <list default="true" id="ec0a942b-9f69-45cc-94e7-e15d65cc371c" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.diplom for college/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.diplom for college/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Assets/PlacementSystem/Scripts/Core/PlacedObject.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/PlacementSystem/Scripts/Core/PlacedObject.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/PlacementSystem/Scripts/Core/InteractionLock.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/PlacementSystem/Scripts/Core/InteractionLock.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/PlacementSystem/Scripts/Core/SelectionManager.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/PlacementSystem/Scripts/Core/SelectionManager.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/PlacementSystem/Scripts/EnergyConnector/EnergyConnector.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/PlacementSystem/Scripts/EnergyConnector/EnergyConnector.cs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Assets/PlacementSystem/Scripts/EnergyConnector/WireConnectionMode.cs" beforeDir="false" afterPath="$PROJECT_DIR$/Assets/PlacementSystem/Scripts/EnergyConnector/WireConnectionMode.cs" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -12,6 +24,9 @@
   </component>
   <component name="DpaMonitoringSettings">
     <option name="firstShow" value="false" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
   </component>
   <component name="HighlightingSettingsPerFile">
     <setting file="file://$APPLICATION_CONFIG_DIR$/resharper-host/DecompilerCache/decompiler/61dc858e9c064822b944126a40a6078e214600/31/67ff99db/UnityEvent`1.cs" root0="FORCE_HIGHLIGHTING" />
@@ -44,7 +59,12 @@
     "Unity Attach To.Attach to.executor": "Debug",
     "cidr.known.project.marker": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
-    "git-widget-placeholder": "main",
+    "git-widget-placeholder": "connections",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
@@ -93,7 +113,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1782247066319</updated>
-      <workItem from="1782247075415" duration="295000" />
+      <workItem from="1782247075415" duration="1258000" />
     </task>
     <servers />
   </component>

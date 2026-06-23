@@ -57,6 +57,16 @@ namespace PlacementSystem
                 sceneCamera = Camera.main;
         }
 
+
+        private void Start()
+        {
+            // Hide every connector that already exists in the scene at startup.
+            // Connectors spawned later at runtime are hidden by EnergyConnector.Awake.
+            var found = FindObjectsByType<EnergyConnector>(FindObjectsSortMode.None);
+            foreach (var c in found)
+                c.gameObject.SetActive(false);
+        }
+
         private void Update()
         {
             HandleModeToggle();
@@ -98,10 +108,15 @@ namespace PlacementSystem
             isActive = true;
             firstConnector = null;
 
-            // Block camera and normal selection while in wire mode
-            InteractionLock.SetCameraLocked(true);
+            // Block selection and gizmo while in wire mode
+            InteractionLock.SetWiringMode(true);
 
+            // Deselect any currently selected object so the gizmo disappears
+            SelectionManager.Instance?.Deselect();
+
+            // Find all connectors, enable their GameObjects, then highlight them
             RefreshConnectorList();
+            SetAllGameObjectsActive(true);
             SetAllHighlights(EnergyConnector.HighlightState.Available);
 
             Debug.Log("[WireConnectionMode] Activated — click a connector to start a wire.");
@@ -111,11 +126,14 @@ namespace PlacementSystem
         {
             isActive = false;
 
+            // Reset highlights before hiding so renderers end up in idle state
             SetAllHighlights(EnergyConnector.HighlightState.Idle);
-            firstConnector = null;
+            SetAllGameObjectsActive(false);
+
+            firstConnector   = null;
             hoveredConnector = null;
 
-            InteractionLock.SetCameraLocked(false);
+            InteractionLock.SetWiringMode(false);
 
             Debug.Log("[WireConnectionMode] Deactivated.");
         }
@@ -260,11 +278,22 @@ namespace PlacementSystem
 
         private void SetAllHighlights(EnergyConnector.HighlightState state)
         {
-            // Remove any destroyed entries first
             allConnectors.RemoveAll(c => c == null);
 
             foreach (var connector in allConnectors)
                 connector.SetHighlight(state);
+        }
+
+        /// <summary>
+        /// Shows or hides the GameObject of every known connector.
+        /// Connectors are hidden by default and only shown while the mode is active.
+        /// </summary>
+        private void SetAllGameObjectsActive(bool active = true)
+        {
+            allConnectors.RemoveAll(c => c == null);
+
+            foreach (var connector in allConnectors)
+                connector.gameObject.GetComponent<MeshRenderer>().enabled = active;
         }
 
         // ── Connector picking ─────────────────────────────────────────────────

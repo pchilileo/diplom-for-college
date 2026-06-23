@@ -45,6 +45,10 @@ namespace PlacementSystem
 
             // Cache any renderers on this connector visual (optional sphere/mesh)
             visualRenderers = GetComponentsInChildren<Renderer>();
+
+            // Connectors are hidden by default; WireConnectionMode shows them
+            // only while wire-connection mode is active.
+            GetComponent<MeshRenderer>().enabled = false;
         }
 
         private void OnDestroy()

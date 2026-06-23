@@ -18,7 +18,7 @@ namespace PlacementSystem
         [SerializeField] private int segments = 20;
 
         [Tooltip("How much the wire droops in the middle. Larger = more sag.")]
-        [SerializeField] private float sagFactor = 0.25f;
+        [SerializeField] private float sagFactor = 0.05f;
 
         [Tooltip("Width of the wire in world units.")]
         [SerializeField] private float wireWidth = 0.03f;
