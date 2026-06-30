@@ -13,7 +13,10 @@ MonoBehaviour:
   m_Name: PlacementAssetDatabase
   m_EditorClassIdentifier: Assembly-CSharp::PlacementSystem.PlacementAssetDatabase
   categories:
-  - {fileID: 11400000, guid: e4188a875ad212c449eabb3582c764f2, type: 2}
-  - {fileID: 11400000, guid: 612df19d39354374793fd8b6e3375422, type: 2}
-  - {fileID: 11400000, guid: 62de8cd2f5c028543b44d9ca4e3bf9bf, type: 2}
-  - {fileID: 11400000, guid: 4cbec1365cbfe314e84ea5a54836fd4b, type: 2}
+  - {fileID: 11400000, guid: aa0459ae77a7deb46abd6198fa4f31b1, type: 2}
+  - {fileID: 11400000, guid: 16925c9d9cd99cc47ad4e2e22e7aa63a, type: 2}
+  - {fileID: 11400000, guid: dbe7aae1988a9394bb72ff3bf264f0f4, type: 2}
+  - {fileID: 11400000, guid: a912b10aca1c2a747abc72b53fead8e8, type: 2}
+  - {fileID: 11400000, guid: 2e6eea903484d154fb0a9b9dac45d570, type: 2}
+  - {fileID: 11400000, guid: 9f11e5bce3afa7c47a83323a3ae3e7fc, type: 2}
+  - {fileID: 11400000, guid: c7a0620538ba4c44cbf7ac7517c17986, type: 2}
