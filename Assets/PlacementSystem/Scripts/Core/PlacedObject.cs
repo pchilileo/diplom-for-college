@@ -48,8 +48,15 @@ namespace PlacementSystem
         private void Awake()
         {
             Transform modelTransform = transform.Find("Model");
-            Mesh modelMesh = modelTransform.GetComponent<MeshFilter>().mesh; 
-            GetComponent<MeshCollider>().sharedMesh = modelMesh;
+            if (modelTransform is not null)
+            {
+                Mesh modelMesh = modelTransform.GetComponent<MeshFilter>().mesh; 
+                GetComponent<MeshCollider>().sharedMesh = modelMesh;
+            }
+            else
+            {
+                GetComponent<MeshCollider>().sharedMesh = GetComponent<MeshFilter>().mesh;
+            }
             CacheRenderers();
         }
 
