@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a587f6266195b8b4ba92bb526344c1e2, type: 3}
+  m_Name: "\u041E\u0448\u0438\u043D\u043E\u0432\u043A\u0430 \u0441 \u0432\u044B\u043D\u043E\u0441\u043D\u044B\u043C\u0438
+    \u0442\u0440\u0430\u043D\u0441\u0444\u043E\u0440\u043C\u0430\u0442\u043E\u0440\u0430\u043C\u0438
+    \u043D\u0430\u043F\u0440\u044F\u0436\u0435\u043D\u0438\u044F \u0420\u041D-\u0421\u042D\u0429"
+  m_EditorClassIdentifier: Assembly-CSharp::PlacementSystem.AssetData
+  displayName: "\u041E\u0448\u0438\u043D\u043E\u0432\u043A\u0430 \u0441 \u0432\u044B\u043D\u043E\u0441\u043D\u044B\u043C\u0438
+    \u0442\u0440\u0430\u043D\u0441\u0444\u043E\u0440\u043C\u0430\u0442\u043E\u0440\u0430\u043C\u0438
+    \u043D\u0430\u043F\u0440\u044F\u0436\u0435\u043D\u0438\u044F \u0420\u041D-\u0421\u042D\u0429"
+  prefab: {fileID: 8243377107251469672, guid: 246b6d94694bf6b419a8bb8597729ec8, type: 3}
+  icon: {fileID: 21300000, guid: c492b92afda2e614f8d5f97da81f4a73, type: 3}
+  categoryRef: {fileID: 11400000, guid: 6debdd8e00d235345a63906d4b51f3b3, type: 2}

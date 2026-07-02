@@ -21,7 +21,7 @@ namespace PlacementSystem
         [SerializeField] private float sagFactor = 0.05f;
 
         [Tooltip("Width of the wire in world units.")]
-        [SerializeField] private float wireWidth = 0.03f;
+        [SerializeField] private float wireWidth = 0.15f;
 
         [Tooltip("Color of the wire.")]
         [SerializeField] private Color wireColor = new(0.15f, 0.15f, 0.15f, 1f);
