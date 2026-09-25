@@ -1,188 +1,179 @@
+using System;
+using System.Globalization;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
 namespace PlacementSystem
 {
+    /// <summary>
+    /// One inspector row with X / Y / Z fields (Position, Rotation, Scale).
+    ///
+    /// • Type a value and press Enter (or click away) to apply it.
+    /// • Drag an axis label left / right to scrub the value.
+    /// • Rows with a link button can keep proportions: changing one axis
+    ///   scales the other two by the same factor (like "Constrain Proportions"
+    ///   on Scale in the Unity inspector).
+    /// </summary>
     public class Vector3FieldGroup : MonoBehaviour
     {
-        [Header("Input Fields")]
-        [SerializeField] private InputField xField;
-        [SerializeField] private InputField yField;
-        [SerializeField] private InputField zField;
+        [Header("Fields")]
+        [SerializeField] private TMP_InputField xField;
+        [SerializeField] private TMP_InputField yField;
+        [SerializeField] private TMP_InputField zField;
 
-        [Header("Step Buttons")]
-        [SerializeField] private Button xMinus;
-        [SerializeField] private Button xPlus;
-        [SerializeField] private Button yMinus;
-        [SerializeField] private Button yPlus;
-        [SerializeField] private Button zMinus;
-        [SerializeField] private Button zPlus;
+        [Header("Axis labels (drag to scrub)")]
+        [SerializeField] private AxisScrubHandle xHandle;
+        [SerializeField] private AxisScrubHandle yHandle;
+        [SerializeField] private AxisScrubHandle zHandle;
+
+        [Header("Proportional link (optional)")]
+        [SerializeField] private Button linkButton;
+        [SerializeField] private Graphic linkGraphic;
+        [SerializeField] private bool linked = true;
 
         [Header("Settings")]
-        [SerializeField] private float step = 0.01f;
-        [SerializeField] private float minScale = 0.01f;
+        [Tooltip("Value change per pixel of mouse movement while scrubbing a label.")]
+        [SerializeField] private float scrubSpeed = 0.02f;
+        [SerializeField] private float minValue = float.MinValue;
+        [SerializeField] private string format = "0.##";
 
-        private bool useUniformScale;
-        private bool suppressEvents;
-        private System.Action<Vector3> onValueChanged;
+        private Vector3 current;
+        private Action<Vector3> onValueChanged;
 
-        public void SetFromVector(Vector3 value, bool uniformScale = false)
+        private bool HasLink => linkButton != null;
+
+        private void Awake()
         {
-            if (suppressEvents)
+            HookField(xField, 0);
+            HookField(yField, 1);
+            HookField(zField, 2);
+
+            HookHandle(xHandle, 0);
+            HookHandle(yHandle, 1);
+            HookHandle(zHandle, 2);
+
+            if (linkButton != null)
+                linkButton.onClick.AddListener(ToggleLink);
+
+            UpdateLinkVisual();
+        }
+
+        // ── Public API ────────────────────────────────────────────────────────
+
+        public void Bind(Action<Vector3> onChanged)
+        {
+            onValueChanged = onChanged;
+        }
+
+        /// <summary>Shows <paramref name="value"/>. A field that is being edited is left alone.</summary>
+        public void SetValue(Vector3 value)
+        {
+            current = value;
+            WriteField(xField, value.x);
+            WriteField(yField, value.y);
+            WriteField(zField, value.z);
+        }
+
+        // ── Editing ───────────────────────────────────────────────────────────
+
+        private void HookField(TMP_InputField field, int axis)
+        {
+            if (field == null)
                 return;
 
-            useUniformScale = uniformScale;
-
-            suppressEvents = true;
-
-            if (useUniformScale)
-            {
-                var uniform = value.x;
-                SetField(xField, uniform);
-                SetField(yField, uniform);
-                SetField(zField, uniform);
-            }
-            else
-            {
-                SetField(xField, value.x);
-                SetField(yField, value.y);
-                SetField(zField, value.z);
-            }
-
-            suppressEvents = false;
+            field.onEndEdit.AddListener(text => OnFieldEndEdit(field, axis, text));
         }
 
-        public void Bind(System.Action<Vector3> onChanged)
+        private void HookHandle(AxisScrubHandle handle, int axis)
         {
-            useUniformScale = false;
-            onValueChanged = onChanged;
-            BindFields();
-            BindStepButtons();
-        }
-
-        public void BindScale(System.Action<Vector3> onChanged)
-        {
-            useUniformScale = true;
-            onValueChanged = onChanged;
-            BindFields();
-            BindStepButtons();
-        }
-
-        private void BindFields()
-        {
-            // Очищаем старые слушатели
-            if (xField != null)
-            {
-                xField.onEndEdit.RemoveAllListeners();
-                xField.onEndEdit.AddListener(_ => OnFieldEndEdit());
-            }
-            if (yField != null)
-            {
-                yField.onEndEdit.RemoveAllListeners();
-                yField.onEndEdit.AddListener(_ => OnFieldEndEdit());
-            }
-            if (zField != null)
-            {
-                zField.onEndEdit.RemoveAllListeners();
-                zField.onEndEdit.AddListener(_ => OnFieldEndEdit());
-            }
-        }
-
-        private void OnFieldEndEdit()
-        {
-            if (suppressEvents)
+            if (handle == null)
                 return;
 
+            handle.Scrubbed += pixels => SetAxis(axis, current[axis] + pixels * scrubSpeed);
+        }
+
+        private void OnFieldEndEdit(TMP_InputField field, int axis, string text)
+        {
             InteractionLock.SetEditingInspector(false);
 
-            var value = ReadVector();
+            if (TryParse(text, out var value))
+                SetAxis(axis, value);
+            else
+                WriteField(field, current[axis], force: true);   // invalid input → show the old value
+        }
 
-            if (useUniformScale)
+        private void SetAxis(int axis, float value)
+        {
+            value = Mathf.Max(minValue, value);
+
+            if (HasLink && linked)
             {
-                // Для scale берем среднее арифметическое или значение X как основное
-                var uniform = Mathf.Max(minScale, value.x);
-                value = Vector3.one * uniform;
-            }
-
-            onValueChanged?.Invoke(value);
-        }
-
-        private void BindStepButtons()
-        {
-            ClearButtonListeners(xMinus);
-            ClearButtonListeners(xPlus);
-            ClearButtonListeners(yMinus);
-            ClearButtonListeners(yPlus);
-            ClearButtonListeners(zMinus);
-            ClearButtonListeners(zPlus);
-
-            if (xMinus != null) xMinus.onClick.AddListener(() => OnStepClick(0, -step));
-            if (xPlus != null) xPlus.onClick.AddListener(() => OnStepClick(0, step));
-            if (yMinus != null) yMinus.onClick.AddListener(() => OnStepClick(1, -step));
-            if (yPlus != null) yPlus.onClick.AddListener(() => OnStepClick(1, step));
-            if (zMinus != null) zMinus.onClick.AddListener(() => OnStepClick(2, -step));
-            if (zPlus != null) zPlus.onClick.AddListener(() => OnStepClick(2, step));
-        }
-
-        private void ClearButtonListeners(Button button)
-        {
-            if (button != null)
-                button.onClick.RemoveAllListeners();
-        }
-
-        private void OnStepClick(int axis, float delta)
-        {
-            if (suppressEvents)
-                return;
-
-            var value = ReadVector();
-
-            if (useUniformScale)
-            {
-                var uniform = Mathf.Max(minScale, value.x + delta);
-                value = Vector3.one * uniform;
+                var old = current[axis];
+                if (Mathf.Abs(old) > 1e-5f)
+                {
+                    var ratio = value / old;
+                    for (var i = 0; i < 3; i++)
+                        current[i] = Mathf.Max(minValue, current[i] * ratio);
+                    current[axis] = value;   // exactly what was typed, no rounding drift
+                }
+                else
+                {
+                    current = Vector3.one * value;
+                }
             }
             else
             {
-                value[axis] += delta;
+                current[axis] = value;
             }
 
-            suppressEvents = true;
-            SetField(xField, value.x);
-            SetField(yField, value.y);
-            SetField(zField, value.z);
-            suppressEvents = false;
+            WriteField(xField, current.x, force: true);
+            WriteField(yField, current.y, force: true);
+            WriteField(zField, current.z, force: true);
 
-            onValueChanged?.Invoke(value);
+            onValueChanged?.Invoke(current);
         }
 
-        private Vector3 ReadVector()
+        private void ToggleLink()
         {
-            return new Vector3(
-                ParseField(xField),
-                ParseField(yField),
-                ParseField(zField)
-            );
+            linked = !linked;
+            UpdateLinkVisual();
         }
 
-        private float ParseField(InputField field)
+        private void UpdateLinkVisual()
         {
-            if (field == null || string.IsNullOrEmpty(field.text))
-                return 0f;
+            if (linkButton == null)
+                return;
 
-            if (float.TryParse(field.text, System.Globalization.NumberStyles.Float,
-                System.Globalization.CultureInfo.InvariantCulture, out var v))
-                return v;
+            var colors = linkButton.colors;
+            colors.normalColor = linked ? UITheme.Accent : UITheme.FieldBackground;
+            colors.highlightedColor = linked ? UITheme.AccentBright : UITheme.Hover;
+            colors.selectedColor = colors.normalColor;
+            linkButton.colors = colors;
 
-            return 0f;
+            if (linkGraphic != null)
+                linkGraphic.color = linked ? Color.white : UITheme.TextDim;
         }
 
-        private void SetField(InputField field, float value)
+        // ── Text helpers ──────────────────────────────────────────────────────
+
+        private void WriteField(TMP_InputField field, float value, bool force = false)
         {
-            if (field != null)
-            {
-                field.text = value.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture);
-            }
+            if (field == null)
+                return;
+
+            // Don't overwrite what the user is typing.
+            if (field.isFocused && !force)
+                return;
+
+            field.SetTextWithoutNotify(value.ToString(format, CultureInfo.InvariantCulture));
+        }
+
+        private static bool TryParse(string text, out float value)
+        {
+            // Accept both "1.5" and "1,5".
+            text = text?.Trim().Replace(',', '.');
+            return float.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
         }
     }
 }

@@ -1,7 +1,7 @@
+using System;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-using UnityEngine.UI;
 #endif
 
 namespace PlacementSystem
@@ -33,11 +33,23 @@ namespace PlacementSystem
         private int activeAxis = -1;
         private Plane dragPlane;
         private Vector3 dragStartWorld;
-        private Vector3 targetStartPosition;
+        private Vector3 targetStartPivot;
         private Quaternion targetStartRotation;
 
         public bool IsDragging => isDragging;
         public GizmoMode Mode => mode;
+
+        /// <summary>Fired when the gizmo switches between translate and rotate.</summary>
+        public event Action<GizmoMode> ModeChanged;
+
+        /// <summary>
+        /// World position of the gizmo: the bottom centre of the selected object
+        /// (see <see cref="PlacedObject.PivotPoint"/>).
+        /// </summary>
+        public static Vector3 GetOrigin(PlacedObject placed)
+        {
+            return placed != null ? placed.PivotPoint : Vector3.zero;
+        }
 
         private void Awake()
         {
@@ -59,7 +71,11 @@ namespace PlacementSystem
 
         public void SetMode(GizmoMode newMode)
         {
+            if (mode == newMode)
+                return;
+
             mode = newMode;
+            ModeChanged?.Invoke(mode);
         }
 
         public bool TryHandleClick(Vector3 screenPosition)
@@ -93,6 +109,10 @@ namespace PlacementSystem
         
         private void HandleModeSwitch()
         {
+            // Letters typed into an inspector field must not switch the tool.
+            if (InteractionLock.IsEditingInspector)
+                return;
+
             #if ENABLE_INPUT_SYSTEM
                 var keyboard = Keyboard.current;
                 if (keyboard == null)
@@ -120,7 +140,7 @@ namespace PlacementSystem
             if (target == null)
                 return;
 
-            var origin = target.transform.position;
+            var origin = GetOrigin(target);
             var size = HandleWorldSize(origin);
 
             switch (mode)
@@ -143,7 +163,7 @@ namespace PlacementSystem
         private void BeginDrag(Vector3 screenPosition)
         {
             isDragging = true;
-            targetStartPosition = target.transform.position;
+            targetStartPivot = GetOrigin(target);
             targetStartRotation = target.transform.rotation;
 
             if (mode == GizmoMode.Translate)
@@ -154,7 +174,7 @@ namespace PlacementSystem
                 else if (activeAxis == 0)
                     normal = Vector3.up;
 
-                dragPlane = new Plane(normal, targetStartPosition);
+                dragPlane = new Plane(normal, targetStartPivot);
                 var ray = sceneCamera.ScreenPointToRay(screenPosition);
                 if (dragPlane.Raycast(ray, out var enter))
                     dragStartWorld = ray.GetPoint(enter);
@@ -180,9 +200,9 @@ namespace PlacementSystem
 
                 var currentWorld = ray.GetPoint(enter);
                 var delta = currentWorld - dragStartWorld;
-                var next = targetStartPosition + FilterDelta(delta);
+                var next = targetStartPivot + FilterDelta(delta);
 
-                target.transform.position = snap.SnapPosition(next);
+                target.SetPivotPosition(snap.SnapPosition(next));
             }
             else
             {
@@ -191,7 +211,9 @@ namespace PlacementSystem
                 var euler = targetStartRotation.eulerAngles;
                 euler.y += deltaX * 0.5f;
                 euler = snap.SnapRotation(euler);
-                target.transform.rotation = Quaternion.Euler(euler);
+
+                // Turn around the bottom centre, not the model file's origin.
+                target.SetRotationAroundPivot(Quaternion.Euler(euler));
             }
 
             target.NotifyTransformChanged();
@@ -216,7 +238,7 @@ namespace PlacementSystem
 
         private int PickAxis(Vector3 screenPosition)
         {
-            var origin = target.transform.position;
+            var origin = GetOrigin(target);
             var size = HandleWorldSize(origin);
 
             if (mode == GizmoMode.Rotate)

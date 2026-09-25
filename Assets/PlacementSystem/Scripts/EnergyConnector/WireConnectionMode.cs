@@ -201,7 +201,7 @@ namespace PlacementSystem
                 }
 
                 if (firstConnector.IsConnectedTo(hit))
-                    Debug.Log("[WireConnectionMode] These connectors are already joined by a wire.");
+                    EditorNotifications.Post("Эти точки уже соединены проводом");
                 else
                     CreateWire(firstConnector, hit);
 
@@ -255,7 +255,7 @@ namespace PlacementSystem
         private void RefreshConnectorList()
         {
             allConnectors.Clear();
-            var found = FindObjectsByType<EnergyConnector>(FindObjectsSortMode.None);
+            var found = FindObjectsByType<EnergyConnector>();
             allConnectors.AddRange(found);
         }
 

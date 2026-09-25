@@ -162,7 +162,7 @@ namespace PlacementSystem
         private void RefreshWireList()
         {
             allWires.Clear();
-            var found = FindObjectsByType<WireConnection>(FindObjectsSortMode.None);
+            var found = FindObjectsByType<WireConnection>();
             allWires.AddRange(found);
         }
 

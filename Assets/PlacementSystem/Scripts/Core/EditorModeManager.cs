@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 #if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
@@ -37,6 +38,9 @@ namespace PlacementSystem
 
         public EditorMode CurrentMode => currentMode;
 
+        /// <summary>Fired after the active mode has changed.</summary>
+        public event Action<EditorMode> ModeChanged;
+
         // ── Lifecycle ─────────────────────────────────────────────────────────
 
         private void Awake()
@@ -52,6 +56,10 @@ namespace PlacementSystem
 
         private void Update()
         {
+            // Digits and Escape typed into a text field belong to that field.
+            if (InteractionLock.IsEditingInspector)
+                return;
+
             if (WasEscapePressed())
             {
                 HandleEscape();
@@ -110,6 +118,8 @@ namespace PlacementSystem
                     Debug.Log("[EditorModeManager] → Wire Delete mode (3)");
                     break;
             }
+
+            ModeChanged?.Invoke(currentMode);
         }
 
         private void HandleEscape()

@@ -124,6 +124,86 @@ namespace PlacementSystem
             return bounds;
         }
 
+        // ── Pivot (bottom centre) ─────────────────────────────────────────────
+
+        /// <summary>
+        /// World-space point at the centre of the model's footprint, level with
+        /// its lowest point. The gizmo sits here, rotation turns around it and
+        /// the inspector shows it as the object's position.
+        ///
+        /// Model files often have their origin far away from the geometry, so
+        /// <c>transform.position</c> is not a useful handle. The footprint is
+        /// measured in a frame that turns with the object's yaw, which keeps the
+        /// point fixed on the model while it is rotated around the vertical axis.
+        /// </summary>
+        public Vector3 PivotPoint
+        {
+            get
+            {
+                if (cachedRenderers == null || cachedRenderers.Length == 0)
+                    return transform.position;
+
+                var origin = transform.position;
+                var yaw = Quaternion.Euler(0f, transform.eulerAngles.y, 0f);
+                var toYawFrame = Quaternion.Inverse(yaw);
+
+                var min = new Vector3(float.MaxValue, float.MaxValue, float.MaxValue);
+                var max = new Vector3(float.MinValue, float.MinValue, float.MinValue);
+                var any = false;
+
+                foreach (var renderer in cachedRenderers)
+                {
+                    if (renderer == null)
+                        continue;
+
+                    var local = renderer.localBounds;
+                    var matrix = renderer.transform.localToWorldMatrix;
+                    for (var i = 0; i < 8; i++)
+                    {
+                        var corner = local.center + Vector3.Scale(local.extents, BoxCorners[i]);
+                        var p = toYawFrame * (matrix.MultiplyPoint3x4(corner) - origin);
+                        min = Vector3.Min(min, p);
+                        max = Vector3.Max(max, p);
+                        any = true;
+                    }
+                }
+
+                if (!any)
+                    return origin;
+
+                var bottomCentre = new Vector3((min.x + max.x) * 0.5f, min.y, (min.z + max.z) * 0.5f);
+                return origin + yaw * bottomCentre;
+            }
+        }
+
+        private static readonly Vector3[] BoxCorners =
+        {
+            new(-1, -1, -1), new(1, -1, -1), new(-1, 1, -1), new(1, 1, -1),
+            new(-1, -1,  1), new(1, -1,  1), new(-1, 1,  1), new(1, 1,  1),
+        };
+
+        /// <summary>Moves the object so that <see cref="PivotPoint"/> ends up at <paramref name="pivot"/>.</summary>
+        public void SetPivotPosition(Vector3 pivot)
+        {
+            transform.position += pivot - PivotPoint;
+        }
+
+        /// <summary>Applies a rotation while keeping <see cref="PivotPoint"/> in place.</summary>
+        public void SetRotationAroundPivot(Quaternion rotation)
+        {
+            var pivot = PivotPoint;
+            transform.rotation = rotation;
+            SetPivotPosition(pivot);
+        }
+
+        /// <summary>Applies a scale while keeping <see cref="PivotPoint"/> in place.</summary>
+        public void SetScaleAroundPivot(Vector3 scale)
+        {
+            var pivot = PivotPoint;
+            transform.localScale = scale;
+            SetPivotPosition(pivot);
+        }
+
         // ── Colliders ─────────────────────────────────────────────────────────
 
         /// <summary>

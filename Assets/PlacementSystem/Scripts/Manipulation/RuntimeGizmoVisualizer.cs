@@ -1,6 +1,5 @@
 using UnityEngine;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.UI;
 
 namespace PlacementSystem
 {
@@ -46,12 +45,6 @@ namespace PlacementSystem
         // Cached layer index
         private int gizmoLayer = -1;
 
-        private readonly Color inActiveColor = new Color(46f/255f, 51f/255f, 66f/255f, 1f);
-        private readonly Color activeColor   = new Color(68f/255f, 145f/255f, 86f/255f, 1f);
-        
-        private Image rotateButtonImage;
-        private Image translateButtonImage;
-        
         // ── Lifecycle ──────────────────────────────────────────────────────────
 
         private void Awake()
@@ -78,8 +71,6 @@ namespace PlacementSystem
             axisZ      = CreateLine("GizmoAxisZ",    Color.blue);
             rotateRing = CreateLine("GizmoRotateRing", Color.yellow, loop: true);
 
-            rotateButtonImage    = FindImage("PlacementUI/RightPanel/ModeRow/RotateButton");
-            translateButtonImage = FindImage("PlacementUI/RightPanel/ModeRow/TranslateButton");
         }
 
         private void LateUpdate()
@@ -92,7 +83,7 @@ namespace PlacementSystem
 
             SetVisible(true);
 
-            var origin = SelectionManager.Instance.SelectedObject.transform.position;
+            var origin = RuntimeTransformGizmo.GetOrigin(SelectionManager.Instance.SelectedObject);
 
             // Use a fixed screen-space length so arrows are always the same size
             // regardless of how close or far the camera is.
@@ -131,17 +122,6 @@ namespace PlacementSystem
 
             // The main camera must not draw the gizmo lines a second time.
             main.cullingMask &= ~(1 << gizmoLayer);
-        }
-
-        private static Image FindImage(string path)
-        {
-            var go = GameObject.Find(path);
-            if (go == null)
-            {
-                Debug.LogWarning($"[RuntimeGizmoVisualizer] UI object \"{path}\" not found.");
-                return null;
-            }
-            return go.GetComponent<Image>();
         }
 
         private void Update()
@@ -227,11 +207,6 @@ namespace PlacementSystem
             axisY.enabled      = visible && gizmo is not null && gizmo.Mode == GizmoMode.Translate;
             axisZ.enabled      = visible && gizmo is not null && gizmo.Mode == GizmoMode.Translate;
             rotateRing.enabled = visible && gizmo is not null && gizmo.Mode == GizmoMode.Rotate;
-            if (gizmo is null) return;
-            if (rotateButtonImage != null)
-                rotateButtonImage.color = gizmo.Mode == GizmoMode.Rotate ? activeColor : inActiveColor;
-            if (translateButtonImage != null)
-                translateButtonImage.color = gizmo.Mode == GizmoMode.Translate ? activeColor : inActiveColor;
         }
         private float ScreenLengthToWorldLength(Vector3 worldPoint, float screenPixels)
         {
