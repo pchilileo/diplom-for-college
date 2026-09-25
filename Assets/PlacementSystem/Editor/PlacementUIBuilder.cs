@@ -379,10 +379,15 @@ namespace PlacementSystem.Editor
             // itself as flexible, and the inspector column would give it all spare space.
             SetControl(toolLayout, true, true, true, false);
             Element(toolRow, minHeight: 24f);
-            var translateButton = TextButton(toolRow.transform, "TranslateButton", "Перемещение   <color=#8F8F8F>T</color>", 12f);
-            var rotateButton = TextButton(toolRow.transform, "RotateButton", "Поворот   <color=#8F8F8F>R</color>", 12f);
+            var translateButton = TextButton(toolRow.transform, "TranslateButton", "Перемещение  <color=#8F8F8F>T</color>", 12f);
+            var rotateButton = TextButton(toolRow.transform, "RotateButton", "Поворот  <color=#8F8F8F>R</color>", 12f);
+            var scaleButton = TextButton(toolRow.transform, "ScaleButton", "Масштаб  <color=#8F8F8F>Y</color>", 12f);
             Element(translateButton.gameObject, prefHeight: 24f, flexWidth: 1f);
             Element(rotateButton.gameObject, prefHeight: 24f, flexWidth: 1f);
+            Element(scaleButton.gameObject, prefHeight: 24f, flexWidth: 1f);
+            var toolNote = Text(toolBody, "Note", "Ctrl — шаг 0.5 м / 15° / 0.1   ·   Esc или ПКМ — отменить перетаскивание",
+                10f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
+            toolNote.textWrappingMode = TextWrappingModes.Normal;
 
             // Connections
             var connectionsBody = Foldout(content.transform, "Подключения", out _);
@@ -414,6 +419,7 @@ namespace PlacementSystem.Editor
             so.FindProperty("resetButton").objectReferenceValue = reset;
             so.FindProperty("translateModeButton").objectReferenceValue = translateButton;
             so.FindProperty("rotateModeButton").objectReferenceValue = rotateButton;
+            so.FindProperty("scaleModeButton").objectReferenceValue = scaleButton;
             so.FindProperty("transformGizmo").objectReferenceValue = managers.GetComponent<RuntimeTransformGizmo>();
             so.FindProperty("connectorsValue").objectReferenceValue = connectors;
             so.FindProperty("wiresValue").objectReferenceValue = wires;

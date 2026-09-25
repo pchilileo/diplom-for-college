@@ -32,6 +32,7 @@ namespace PlacementSystem
         [Header("Tool")]
         [SerializeField] private Button translateModeButton;
         [SerializeField] private Button rotateModeButton;
+        [SerializeField] private Button scaleModeButton;
         [SerializeField] private RuntimeTransformGizmo transformGizmo;
 
         [Header("Connections")]
@@ -62,6 +63,9 @@ namespace PlacementSystem
 
             if (rotateModeButton != null)
                 rotateModeButton.onClick.AddListener(() => transformGizmo?.SetMode(GizmoMode.Rotate));
+
+            if (scaleModeButton != null)
+                scaleModeButton.onClick.AddListener(() => transformGizmo?.SetMode(GizmoMode.Scale));
 
             if (deleteButton != null)
                 deleteButton.onClick.AddListener(OnDeleteClicked);
@@ -266,6 +270,7 @@ namespace PlacementSystem
         {
             PaintToolButton(translateModeButton, mode == GizmoMode.Translate);
             PaintToolButton(rotateModeButton, mode == GizmoMode.Rotate);
+            PaintToolButton(scaleModeButton, mode == GizmoMode.Scale);
         }
 
         private static void PaintToolButton(Button button, bool active)
