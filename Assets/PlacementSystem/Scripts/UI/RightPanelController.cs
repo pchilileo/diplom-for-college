@@ -43,6 +43,8 @@ namespace PlacementSystem
 
         private PlacedObject boundObject;
         private readonly HashSet<WireConnection> wireBuffer = new();
+        private int shownConnectors = -1;
+        private int shownWires = -1;
 
         // ── Lifecycle ──────────────────────────────────────────────────────────
 
@@ -192,10 +194,17 @@ namespace PlacementSystem
                 }
             }
 
-            if (connectorsValue != null)
-                connectorsValue.text = connectors.Count.ToString();
-            if (wiresValue != null)
-                wiresValue.text = wireBuffer.Count.ToString();
+            // Only touch the labels when a number changes (no per-frame strings / canvas rebuilds).
+            if (connectorsValue != null && connectors.Count != shownConnectors)
+            {
+                shownConnectors = connectors.Count;
+                connectorsValue.text = shownConnectors.ToString();
+            }
+            if (wiresValue != null && wireBuffer.Count != shownWires)
+            {
+                shownWires = wireBuffer.Count;
+                wiresValue.text = shownWires.ToString();
+            }
         }
 
         // ── Apply from inspector fields ────────────────────────────────────────

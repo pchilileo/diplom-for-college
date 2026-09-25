@@ -39,6 +39,7 @@ namespace PlacementSystem
         [SerializeField] private string format = "0.##";
 
         private Vector3 current;
+        private bool hasValue;
         private Action<Vector3> onValueChanged;
 
         private bool HasLink => linkButton != null;
@@ -66,9 +67,17 @@ namespace PlacementSystem
             onValueChanged = onChanged;
         }
 
-        /// <summary>Shows <paramref name="value"/>. A field that is being edited is left alone.</summary>
+        /// <summary>
+        /// Shows <paramref name="value"/>. A field that is being edited is left alone.
+        /// Called every frame by the inspector, so an unchanged value costs nothing:
+        /// rewriting the text would allocate strings and rebuild the UI canvas.
+        /// </summary>
         public void SetValue(Vector3 value)
         {
+            if (hasValue && value == current)
+                return;
+
+            hasValue = true;
             current = value;
             WriteField(xField, value.x);
             WriteField(yField, value.y);

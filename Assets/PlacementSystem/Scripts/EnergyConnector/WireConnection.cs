@@ -32,6 +32,13 @@ namespace PlacementSystem
         private EnergyConnector connectorB;
         private LineRenderer line;
 
+        // Curve points and the endpoint positions they were built for:
+        // the curve is only rebuilt when one of the endpoints has moved.
+        private Vector3[] points;
+        private Vector3 builtStart;
+        private Vector3 builtEnd;
+        private bool isBuilt;
+
         private static Material sharedMaterial;
 
         public EnergyConnector ConnectorA => connectorA;
@@ -47,12 +54,18 @@ namespace PlacementSystem
 
         private void LateUpdate()
         {
-            // Rebuild the curve every frame so it tracks moving objects
             if (connectorA == null || connectorB == null)
             {
                 DestroyWire();
                 return;
             }
+
+            // Most wires never move: skip them so the LineRenderer mesh is not
+            // regenerated for every wire in every frame.
+            var start = connectorA.transform.position;
+            var end   = connectorB.transform.position;
+            if (isBuilt && start == builtStart && end == builtEnd)
+                return;
 
             RebuildCurve();
         }
@@ -123,35 +136,36 @@ namespace PlacementSystem
             var start = connectorA.transform.position;
             var end   = connectorB.transform.position;
 
-            line.positionCount = segments + 1;
+            var count = segments + 1;
+            if (points == null || points.Length != count)
+                points = new Vector3[count];
 
             var maxSag = Vector3.Distance(start, end) * sagFactor;
 
-            for (var i = 0; i <= segments; i++)
+            // Sag direction: world down, but never along the wire itself
+            // (prevents weird artifacts when the wire is nearly vertical)
+            var wireDir = (end - start).normalized;
+            var sagDir  = (Vector3.down - Vector3.Dot(Vector3.down, wireDir) * wireDir).normalized;
+            if (sagDir.sqrMagnitude < 0.001f)
+                sagDir = Vector3.forward; // fallback for perfectly vertical wires
+
+            for (var i = 0; i < count; i++)
             {
                 var t = i / (float)segments;
-
-                // Linear interpolation along the chord
-                var point = Vector3.Lerp(start, end, t);
 
                 // Parabolic sag: f(t) = 4 * maxSag * t * (1 - t)
                 // This peaks at t=0.5 and is 0 at both endpoints.
                 var sag = 4f * maxSag * t * (1f - t);
 
-                // Sag direction: world down, but never along the wire itself
-                var wireDir = (end - start).normalized;
-                var sagDir  = Vector3.down;
-
-                // Remove any component of sagDir that is parallel to the wire
-                // (prevents weird artifacts when the wire is nearly vertical)
-                sagDir = (sagDir - Vector3.Dot(sagDir, wireDir) * wireDir).normalized;
-
-                if (sagDir.sqrMagnitude < 0.001f)
-                    sagDir = Vector3.forward; // fallback for perfectly vertical wires
-
-                point += sagDir * sag;
-                line.SetPosition(i, point);
+                points[i] = Vector3.Lerp(start, end, t) + sagDir * sag;
             }
+
+            line.positionCount = count;
+            line.SetPositions(points);
+
+            builtStart = start;
+            builtEnd = end;
+            isBuilt = true;
         }
 
         // ── LineRenderer setup ────────────────────────────────────────────────

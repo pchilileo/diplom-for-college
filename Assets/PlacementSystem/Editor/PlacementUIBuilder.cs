@@ -215,6 +215,7 @@ namespace PlacementSystem.Editor
             rect.offsetMin = new Vector2(0f, StatusHeight);
             rect.offsetMax = new Vector2(LeftWidth, 0f);
             panel.AddComponent<Image>().color = UITheme.PanelBackground;
+            SubCanvas(panel);
 
             TabBar(panel.transform, "Оборудование");
 
@@ -301,6 +302,7 @@ namespace PlacementSystem.Editor
             rect.offsetMin = new Vector2(-RightWidth, StatusHeight);
             rect.offsetMax = new Vector2(0f, 0f);
             panel.AddComponent<Image>().color = UITheme.PanelBackground;
+            SubCanvas(panel);
 
             TabBar(panel.transform, "Инспектор");
 
@@ -515,6 +517,7 @@ namespace PlacementSystem.Editor
             rect.offsetMin = Vector2.zero;
             rect.offsetMax = new Vector2(0f, StatusHeight);
             bar.AddComponent<Image>().color = UITheme.WindowTab;
+            SubCanvas(bar);
 
             var layout = bar.AddComponent<HorizontalLayoutGroup>();
             layout.padding = new RectOffset(4, 12, 2, 2);
@@ -562,6 +565,17 @@ namespace PlacementSystem.Editor
         }
 
         // ── Shared pieces ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Own canvas per panel: when the inspector values change, only that
+        /// panel is re-batched instead of the whole UI (library list included).
+        /// Every nested canvas needs its own raycaster to receive clicks.
+        /// </summary>
+        private static void SubCanvas(GameObject go)
+        {
+            go.AddComponent<Canvas>();
+            go.AddComponent<GraphicRaycaster>();
+        }
 
         private static void TabBar(Transform panel, string title)
         {
