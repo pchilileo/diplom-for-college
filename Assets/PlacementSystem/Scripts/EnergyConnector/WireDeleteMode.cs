@@ -14,19 +14,17 @@ namespace PlacementSystem
     /// • All existing wires light up (orange/red highlight).
     /// • Hover a wire → it turns bright red.
     /// • Click a wire → it is permanently deleted.
-    /// • Press <b>3</b> or <b>Escape</b> to exit without deleting.
+    /// • Press <b>3</b> or <b>Escape</b> to exit without deleting
+    ///   (handled by <see cref="EditorModeManager"/>).
     ///
     /// ── Setup ─────────────────────────────────────────────────────────────────
-    /// Add this component to the same Manager GameObject as WireConnectionMode.
+    /// Add this component to the same Manager GameObject as EditorModeManager.
     /// Assign <c>sceneCamera</c> or leave null for Camera.main.
     /// ─────────────────────────────────────────────────────────────────────────
     /// </summary>
     public class WireDeleteMode : MonoBehaviour
     {
         // ── Inspector ─────────────────────────────────────────────────────────
-
-        [Tooltip("Reference to WireConnectionMode for mutual exclusion (auto-found if null).")]
-        [SerializeField] private WireConnectionMode connectionMode;
 
         [Tooltip("Scene camera used for picking. Defaults to Camera.main.")]
         [SerializeField] private Camera sceneCamera;
@@ -53,32 +51,29 @@ namespace PlacementSystem
         // Wire currently under the cursor
         private WireConnection hoveredWire;
 
+        // Reused buffer for LineRenderer positions while picking
+        private Vector3[] positionBuffer = new Vector3[32];
+
         // ── Lifecycle ─────────────────────────────────────────────────────────
 
         private void Awake()
         {
             if (sceneCamera == null)
                 sceneCamera = Camera.main;
-
-            if (connectionMode == null)
-                connectionMode = FindAnyObjectByType<WireConnectionMode>();
         }
 
         private void Update()
         {
-            HandleModeToggle();
-
             if (!isActive)
                 return;
 
             HandleHover();
             HandleClick();
-            HandleCancel();
         }
 
         // ── Toggle ────────────────────────────────────────────────────────────
 
-        // Key handling is delegated to EditorModeManager (keys 1/2/3).
+        // All mode switching (keys 1/2/3, Escape) is owned by EditorModeManager.
 
         /// <summary>Activate wire-delete mode. Called by <see cref="EditorModeManager"/>.</summary>
         public void ForceActivate()
@@ -87,12 +82,7 @@ namespace PlacementSystem
                 Activate();
         }
 
-        private void HandleModeToggle()
-        {
-            // Intentionally empty — EditorModeManager owns all mode-key logic.
-        }
-
-        /// <summary>Called by WireConnectionMode to mutually exclude modes.</summary>
+        /// <summary>Deactivate wire-delete mode. Called by <see cref="EditorModeManager"/>.</summary>
         public void ForceDeactivate()
         {
             if (isActive)
@@ -101,10 +91,6 @@ namespace PlacementSystem
 
         private void Activate()
         {
-            // Deactivate connection mode if it's running
-            if (connectionMode != null && connectionMode.IsActive)
-                connectionMode.ForceDeactivate();
-
             isActive = true;
 
             // Block normal object selection while choosing a wire
@@ -171,22 +157,6 @@ namespace PlacementSystem
             DeleteWire(hit);
         }
 
-        // ── Cancel ────────────────────────────────────────────────────────────
-
-        private void HandleCancel()
-        {
-            var escape = false;
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
-                escape = true;
-#else
-            if (Input.GetKeyDown(KeyCode.Escape))
-                escape = true;
-#endif
-            if (escape) Deactivate();
-        }
-
         // ── Wire management ───────────────────────────────────────────────────
 
         private void RefreshWireList()
@@ -216,39 +186,22 @@ namespace PlacementSystem
 
         private static void SetWireColor(WireConnection wire, Color color)
         {
-            if (wire == null) return;
-
-            var lr = wire.GetComponent<LineRenderer>();
-            if (lr == null) return;
-
-            lr.startColor = color;
-            lr.endColor   = color;
-
-            // Also tint the material so it's visible on all pipelines
-            if (lr.material != null)
-                lr.material.color = color;
+            if (wire != null)
+                wire.SetColor(color);
         }
 
         private void SetAllWireColors(Color color)
         {
             allWires.RemoveAll(w => w == null);
             foreach (var wire in allWires)
-                SetWireColor(wire, color);
+                wire.SetColor(color);
         }
 
         private void RestoreAllWireColors()
         {
             allWires.RemoveAll(w => w == null);
             foreach (var wire in allWires)
-            {
-                // Ask the wire to reset itself to its configured color
-                var lr = wire.GetComponent<LineRenderer>();
-                if (lr == null) continue;
-
-                // WireConnection stores wireColor as a private field.
-                // We restore by calling the wire's own restore method.
                 wire.RestoreDefaultColor();
-            }
         }
 
         // ── Wire picking ──────────────────────────────────────────────────────
@@ -293,7 +246,9 @@ namespace PlacementSystem
 
             // Collect world positions
             var count = lr.positionCount;
-            var positions = new Vector3[count];
+            if (positionBuffer.Length < count)
+                positionBuffer = new Vector3[count];
+            var positions = positionBuffer;
             lr.GetPositions(positions);
 
             for (var i = 0; i < count - 1; i++)

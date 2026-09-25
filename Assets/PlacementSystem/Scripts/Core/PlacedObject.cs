@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace PlacementSystem
 {
-    [DisallowMultipleComponent] [RequireComponent(typeof(MeshCollider), typeof(MeshRenderer), typeof(MeshCollider))]
+    [DisallowMultipleComponent]
     public class PlacedObject : MonoBehaviour
     {
         [SerializeField] private string objectId;
@@ -12,10 +12,14 @@ namespace PlacementSystem
 
         // Highlight tint applied when object is selected
         [SerializeField] private Color selectionTint = new Color(0.4f, 0.8f, 1f, 1f);
-        [SerializeField] private float selectionEmissionIntensity = 0.35f;
+        [SerializeField, Range(0f, 1f)] private float selectionTintStrength = 0.45f;
+
+        private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId     = Shader.PropertyToID("_Color");
 
         private Renderer[] cachedRenderers;
         private Color[][] originalColors;   // [rendererIndex][materialIndex]
+        private MaterialPropertyBlock propertyBlock;
         private bool isSelected;
 
         public string ObjectId => objectId;
@@ -47,16 +51,7 @@ namespace PlacementSystem
 
         private void Awake()
         {
-            Transform modelTransform = transform.Find("Model");
-            if (modelTransform is not null)
-            {
-                Mesh modelMesh = modelTransform.GetComponent<MeshFilter>().mesh; 
-                GetComponent<MeshCollider>().sharedMesh = modelMesh;
-            }
-            else
-            {
-                GetComponent<MeshCollider>().sharedMesh = GetComponent<MeshFilter>().mesh;
-            }
+            EnsureColliders();
             CacheRenderers();
         }
 
@@ -102,7 +97,7 @@ namespace PlacementSystem
         {
             cachedConnectors ??= new List<EnergyConnector>();
             cachedConnectors.Clear();
-            GetComponentsInChildren(cachedConnectors);
+            GetComponentsInChildren(true, cachedConnectors);
         }
 
         /// <summary>
@@ -116,7 +111,7 @@ namespace PlacementSystem
             return transform.position.y - bounds.min.y;
         }
 
-        /// <summary>Returns the combined world-space bounds of all renderers.</summary>
+        /// <summary>Returns the combined world-space bounds of the model renderers.</summary>
         public Bounds GetWorldBounds()
         {
             if (cachedRenderers == null || cachedRenderers.Length == 0)
@@ -129,6 +124,48 @@ namespace PlacementSystem
             return bounds;
         }
 
+        // ── Colliders ─────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Gives every model mesh in the hierarchy its own collider so a click
+        /// anywhere on the model selects it.
+        ///
+        /// A MeshCollider created at runtime needs a mesh with Read/Write enabled —
+        /// the editor ignores this, but in a build such a collider silently gets no
+        /// geometry. Non-readable meshes therefore fall back to a BoxCollider,
+        /// which only needs the mesh bounds.
+        /// </summary>
+        private void EnsureColliders()
+        {
+            foreach (var filter in GetComponentsInChildren<MeshFilter>(true))
+            {
+                if (IsServiceObject(filter.transform))
+                    continue;
+
+                if (filter.GetComponent<Collider>() != null)
+                    continue;
+
+                var mesh = filter.sharedMesh;
+                if (mesh == null)
+                    continue;
+
+                if (mesh.isReadable)
+                    filter.gameObject.AddComponent<MeshCollider>().sharedMesh = mesh;
+                else
+                    filter.gameObject.AddComponent<BoxCollider>();
+            }
+
+            if (GetComponentInChildren<Collider>() == null)
+                gameObject.AddComponent<BoxCollider>();
+        }
+
+        /// <summary>Connector points and wires are not part of the model itself.</summary>
+        private static bool IsServiceObject(Transform t)
+        {
+            return t.GetComponentInParent<EnergyConnector>(true) != null
+                || t.GetComponentInParent<WireConnection>(true) != null;
+        }
+
         // ── Selection highlight ───────────────────────────────────────────────
 
         public void SetSelected(bool selected)
@@ -137,79 +174,72 @@ namespace PlacementSystem
                 return;
 
             isSelected = selected;
-
-            if (selected)
-                ApplyHighlight();
-            else
-                RemoveHighlight();
+            ApplyHighlight(selected);
         }
 
-        private void ApplyHighlight()
+        /// <summary>
+        /// Tints the model through a MaterialPropertyBlock: materials are not
+        /// duplicated and nothing has to be restored on the assets afterwards.
+        /// </summary>
+        private void ApplyHighlight(bool selected)
         {
             if (cachedRenderers == null)
                 return;
 
-            for (var r = 0; r < cachedRenderers.Length; r++)
-            {
-                var mats = cachedRenderers[r].materials;
-                for (var m = 0; m < mats.Length; m++)
-                {
-                    var mat = mats[m];
-
-                    // Additive colour tint
-                    if (mat.HasProperty("_Color"))
-                        mat.color = Color.Lerp(originalColors[r][m], selectionTint, 0.35f);
-
-                    // Emission glow (Standard / URP Lit shaders)
-                    if (mat.HasProperty("_EmissionColor"))
-                    {
-                        mat.EnableKeyword("_EMISSION");
-                        mat.SetColor("_EmissionColor", selectionTint * selectionEmissionIntensity);
-                    }
-                }
-                cachedRenderers[r].materials = mats;
-            }
-        }
-
-        private void RemoveHighlight()
-        {
-            if (cachedRenderers == null)
-                return;
+            propertyBlock ??= new MaterialPropertyBlock();
 
             for (var r = 0; r < cachedRenderers.Length; r++)
             {
-                var mats = cachedRenderers[r].materials;
-                for (var m = 0; m < mats.Length; m++)
+                var renderer = cachedRenderers[r];
+                if (renderer == null)
+                    continue;
+
+                for (var m = 0; m < originalColors[r].Length; m++)
                 {
-                    var mat = mats[m];
+                    propertyBlock.Clear();
 
-                    if (mat.HasProperty("_Color"))
-                        mat.color = originalColors[r][m];
-
-                    if (mat.HasProperty("_EmissionColor"))
+                    if (selected)
                     {
-                        mat.SetColor("_EmissionColor", Color.black);
-                        mat.DisableKeyword("_EMISSION");
+                        var tinted = Color.Lerp(originalColors[r][m], selectionTint, selectionTintStrength);
+                        propertyBlock.SetColor(BaseColorId, tinted);   // URP Lit / Unlit
+                        propertyBlock.SetColor(ColorId, tinted);       // Built-in / legacy
                     }
+
+                    renderer.SetPropertyBlock(propertyBlock, m);
                 }
-                cachedRenderers[r].materials = mats;
             }
         }
 
         private void CacheRenderers()
         {
-            cachedRenderers = GetComponentsInChildren<Renderer>();
+            var renderers = new List<Renderer>();
+            foreach (var renderer in GetComponentsInChildren<Renderer>(true))
+            {
+                if (!IsServiceObject(renderer.transform))
+                    renderers.Add(renderer);
+            }
+
+            cachedRenderers = renderers.ToArray();
             originalColors = new Color[cachedRenderers.Length][];
 
             for (var r = 0; r < cachedRenderers.Length; r++)
             {
-                var mats = cachedRenderers[r].materials;
+                var mats = cachedRenderers[r].sharedMaterials;
                 originalColors[r] = new Color[mats.Length];
                 for (var m = 0; m < mats.Length; m++)
-                    originalColors[r][m] = mats[m].HasProperty("_Color")
-                        ? mats[m].color
-                        : Color.white;
+                    originalColors[r][m] = GetMaterialColor(mats[m]);
             }
+        }
+
+        private static Color GetMaterialColor(Material mat)
+        {
+            if (mat == null)
+                return Color.white;
+            if (mat.HasProperty(BaseColorId))
+                return mat.GetColor(BaseColorId);
+            if (mat.HasProperty(ColorId))
+                return mat.GetColor(ColorId);
+            return Color.white;
         }
     }
 }

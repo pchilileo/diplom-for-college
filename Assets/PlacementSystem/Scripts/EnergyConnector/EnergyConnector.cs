@@ -28,6 +28,11 @@ namespace PlacementSystem
         // ── Highlight state ───────────────────────────────────────────────────
 
         private Renderer[] visualRenderers;
+        private MaterialPropertyBlock propertyBlock;
+
+        private static readonly int BaseColorId     = Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId         = Shader.PropertyToID("_Color");
+        private static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
 
         private static readonly Color IdleColor     = new(0.8f, 0.8f, 0.8f, 1f);
         private static readonly Color AvailableColor = new(0.2f, 0.8f, 1.0f, 1f);   // cyan  – mode active
@@ -44,11 +49,19 @@ namespace PlacementSystem
             Owner = GetComponentInParent<PlacedObject>();
 
             // Cache any renderers on this connector visual (optional sphere/mesh)
-            visualRenderers = GetComponentsInChildren<Renderer>();
+            visualRenderers = GetComponentsInChildren<Renderer>(true);
 
             // Connectors are hidden by default; WireConnectionMode shows them
             // only while wire-connection mode is active.
-            GetComponent<MeshRenderer>().enabled = false;
+            SetVisible(false);
+        }
+
+        private void Start()
+        {
+            // PlacedObject is added to the spawned instance after Instantiate,
+            // i.e. after this Awake has already run.
+            if (Owner == null)
+                Owner = GetComponentInParent<PlacedObject>();
         }
 
         private void OnDestroy()
@@ -75,7 +88,31 @@ namespace PlacementSystem
             connections.Remove(wire);
         }
 
+        /// <summary>True if a wire already joins this connector with <paramref name="other"/>.</summary>
+        public bool IsConnectedTo(EnergyConnector other)
+        {
+            foreach (var wire in connections)
+            {
+                if (wire == null)
+                    continue;
+                if ((wire.ConnectorA == this && wire.ConnectorB == other) ||
+                    (wire.ConnectorB == this && wire.ConnectorA == other))
+                    return true;
+            }
+            return false;
+        }
+
         // ── Visual highlight ──────────────────────────────────────────────────
+
+        /// <summary>Shows or hides the connector marker. The collider is not touched.</summary>
+        public void SetVisible(bool visible)
+        {
+            foreach (var r in visualRenderers)
+            {
+                if (r != null)
+                    r.enabled = visible;
+            }
+        }
 
         public void SetHighlight(HighlightState state)
         {
@@ -87,29 +124,22 @@ namespace PlacementSystem
                 _                        => IdleColor,
             };
 
+            // Emission only shows up if the marker material already has it enabled;
+            // keywords can't be switched through a property block.
+            var emission = state != HighlightState.Idle ? color * 0.6f : Color.black;
+
+            propertyBlock ??= new MaterialPropertyBlock();
+
             foreach (var r in visualRenderers)
             {
-                // Works with Standard, URP Lit and Unlit shaders
-                foreach (var mat in r.materials)
-                {
-                    if (mat.HasProperty("_Color"))
-                        mat.color = color;
-                    if (mat.HasProperty("_BaseColor"))
-                        mat.SetColor("_BaseColor", color);
-                    if (mat.HasProperty("_EmissionColor"))
-                    {
-                        if (state != HighlightState.Idle)
-                        {
-                            mat.EnableKeyword("_EMISSION");
-                            mat.SetColor("_EmissionColor", color * 0.6f);
-                        }
-                        else
-                        {
-                            mat.SetColor("_EmissionColor", Color.black);
-                            mat.DisableKeyword("_EMISSION");
-                        }
-                    }
-                }
+                if (r == null)
+                    continue;
+
+                r.GetPropertyBlock(propertyBlock);
+                propertyBlock.SetColor(BaseColorId, color);       // URP Lit / Unlit
+                propertyBlock.SetColor(ColorId, color);           // Built-in / legacy
+                propertyBlock.SetColor(EmissionColorId, emission);
+                r.SetPropertyBlock(propertyBlock);
             }
         }
     }

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 using UnityEngine.UI;
 
 namespace PlacementSystem
@@ -8,16 +9,13 @@ namespace PlacementSystem
     /// so the lines are ALWAYS visible regardless of camera distance, and render
     /// on top of the 3-D scene but below the UI canvas.
     ///
-    /// ── Setup required in the Unity Editor ────────────────────────────────────
-    /// 1. Create a new Layer called "GizmoOverlay" (e.g. Layer 31).
-    /// 2. On your main scene Camera:
-    ///      • Open the Culling Mask dropdown and UNCHECK "GizmoOverlay"
-    ///        so the main camera doesn't draw the gizmo lines a second time.
-    /// 3. On your UI Canvas:
-    ///      • Make sure it renders on a higher sort order than the overlay camera
-    ///        (the default "Screen Space – Overlay" canvas always appears on top anyway).
-    /// The overlay camera is created at runtime by this script — you don't need to
-    /// add one yourself.
+    /// The overlay camera is created at runtime as a URP <i>Overlay</i> camera and
+    /// pushed onto the main camera's stack; the "GizmoOverlay" layer is removed
+    /// from the main camera's culling mask automatically.
+    ///
+    /// If the "GizmoOverlay" layer does not exist, no overlay camera is created:
+    /// the lines stay on the Default layer and their ZTest-Always material still
+    /// keeps them on top of the scene.
     /// ──────────────────────────────────────────────────────────────────────────
     /// </summary>
     [RequireComponent(typeof(RuntimeTransformGizmo))]
@@ -66,20 +64,22 @@ namespace PlacementSystem
             {
                 // Fall back to default layer and warn — the developer needs to create it.
                 Debug.LogWarning($"[RuntimeGizmoVisualizer] Layer \"{gizmoLayerName}\" not found. " +
-                                 "Gizmo lines will be drawn on the Default layer and may be occluded. " +
+                                 "Gizmo lines will be drawn by the main camera on the Default layer. " +
                                  "Create the layer in Edit > Project Settings > Tags and Layers.");
                 gizmoLayer = 0;
             }
-
-            CreateOverlayCamera();
+            else
+            {
+                CreateOverlayCamera();
+            }
 
             axisX      = CreateLine("GizmoAxisX",    Color.red);
             axisY      = CreateLine("GizmoAxisY",    Color.green);
             axisZ      = CreateLine("GizmoAxisZ",    Color.blue);
             rotateRing = CreateLine("GizmoRotateRing", Color.yellow, loop: true);
 
-            rotateButtonImage = GameObject.Find("PlacementUI/RightPanel/ModeRow/RotateButton").GetComponent<Image>();
-            translateButtonImage = GameObject.Find("PlacementUI/RightPanel/ModeRow/TranslateButton").GetComponent<Image>();
+            rotateButtonImage    = FindImage("PlacementUI/RightPanel/ModeRow/RotateButton");
+            translateButtonImage = FindImage("PlacementUI/RightPanel/ModeRow/TranslateButton");
         }
 
         private void LateUpdate()
@@ -108,19 +108,40 @@ namespace PlacementSystem
 
         private void CreateOverlayCamera()
         {
+            var main = Camera.main;
+            if (main == null)
+                return;
+
             var camGO = new GameObject("GizmoOverlayCamera");
             camGO.transform.SetParent(transform, false);
 
             overlayCam = camGO.AddComponent<Camera>();
+            overlayCam.cullingMask   = 1 << gizmoLayer;   // only gizmo layer
+            overlayCam.nearClipPlane = 0.01f;             // very close — prevents near-clip hiding
+            overlayCam.farClipPlane  = 10000f;
+            overlayCam.allowHDR      = false;
+            overlayCam.allowMSAA     = false;
 
-            // Mirror main camera settings at runtime
-            overlayCam.clearFlags      = CameraClearFlags.Depth; // don't clear colour
-            overlayCam.cullingMask     = 1 << gizmoLayer;        // only gizmo layer
-            overlayCam.depth           = 1;                       // render after main cam (depth 0), before UI overlay
-            overlayCam.nearClipPlane   = 0.01f;                   // very close — prevents near-clip hiding
-            overlayCam.farClipPlane    = 10000f;
-            overlayCam.allowHDR        = false;
-            overlayCam.allowMSAA       = false;
+            // In URP a plain second camera is another *Base* camera: it renders
+            // the frame again from scratch with its own background, wiping out
+            // the main camera's skybox. It has to be an Overlay camera stacked
+            // on top of the main one instead (clearFlags are ignored by URP).
+            overlayCam.GetUniversalAdditionalCameraData().renderType = CameraRenderType.Overlay;
+            main.GetUniversalAdditionalCameraData().cameraStack.Add(overlayCam);
+
+            // The main camera must not draw the gizmo lines a second time.
+            main.cullingMask &= ~(1 << gizmoLayer);
+        }
+
+        private static Image FindImage(string path)
+        {
+            var go = GameObject.Find(path);
+            if (go == null)
+            {
+                Debug.LogWarning($"[RuntimeGizmoVisualizer] UI object \"{path}\" not found.");
+                return null;
+            }
+            return go.GetComponent<Image>();
         }
 
         private void Update()
@@ -206,8 +227,11 @@ namespace PlacementSystem
             axisY.enabled      = visible && gizmo is not null && gizmo.Mode == GizmoMode.Translate;
             axisZ.enabled      = visible && gizmo is not null && gizmo.Mode == GizmoMode.Translate;
             rotateRing.enabled = visible && gizmo is not null && gizmo.Mode == GizmoMode.Rotate;
-            rotateButtonImage.color = gizmo.Mode == GizmoMode.Rotate ? activeColor : inActiveColor;
-            translateButtonImage.color = gizmo.Mode == GizmoMode.Translate ? activeColor : inActiveColor;
+            if (gizmo is null) return;
+            if (rotateButtonImage != null)
+                rotateButtonImage.color = gizmo.Mode == GizmoMode.Rotate ? activeColor : inActiveColor;
+            if (translateButtonImage != null)
+                translateButtonImage.color = gizmo.Mode == GizmoMode.Translate ? activeColor : inActiveColor;
         }
         private float ScreenLengthToWorldLength(Vector3 worldPoint, float screenPixels)
         {

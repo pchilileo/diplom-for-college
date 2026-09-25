@@ -60,7 +60,7 @@ namespace PlacementSystem
             // FIX: lift the object so its bottom sits on the ground plane
             LiftToGround(placed);
 
-            EnsureCollider(instance);
+            // Colliders are created by PlacedObject itself (see PlacedObject.EnsureColliders).
             ObjectSpawned?.Invoke(placed);
             return placed;
         }
@@ -176,11 +176,11 @@ namespace PlacementSystem
 
             foreach (var renderer in root.GetComponentsInChildren<Renderer>())
             {
-                var materials = new Material[renderer.materials.Length];
+                var materials = new Material[renderer.sharedMaterials.Length];
                 for (var i = 0; i < materials.Length; i++)
                     materials[i] = previewMaterial;
 
-                renderer.materials = materials;
+                renderer.sharedMaterials = materials;
             }
         }
 
@@ -191,22 +191,6 @@ namespace PlacementSystem
 
             foreach (var rb in root.GetComponentsInChildren<Rigidbody>())
                 rb.isKinematic = true;
-        }
-
-        private static void EnsureCollider(GameObject root)
-        {
-            if (root.GetComponentInChildren<Collider>() != null)
-                return;
-
-            var filter = root.GetComponentInChildren<MeshFilter>();
-            if (filter != null)
-            {
-                var meshCollider = filter.gameObject.AddComponent<MeshCollider>();
-                meshCollider.convex = true;
-                return;
-            }
-
-            root.AddComponent<BoxCollider>();
         }
     }
 }

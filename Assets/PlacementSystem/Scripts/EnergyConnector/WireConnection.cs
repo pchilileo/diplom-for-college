@@ -32,6 +32,8 @@ namespace PlacementSystem
         private EnergyConnector connectorB;
         private LineRenderer line;
 
+        private static Material sharedMaterial;
+
         public EnergyConnector ConnectorA => connectorA;
         public EnergyConnector ConnectorB => connectorB;
 
@@ -87,20 +89,23 @@ namespace PlacementSystem
                 Destroy(gameObject);
         }
 
+        /// <summary>Tints the whole wire (used by <see cref="WireDeleteMode"/> for highlighting).</summary>
+        public void SetColor(Color color)
+        {
+            if (line == null)
+                return;
+
+            line.startColor = color;
+            line.endColor   = color;
+        }
+
         /// <summary>
         /// Resets the LineRenderer colors back to the wire's configured <see cref="wireColor"/>.
         /// Called by <see cref="WireDeleteMode"/> when exiting delete mode.
         /// </summary>
         public void RestoreDefaultColor()
         {
-            if (line == null)
-                return;
-
-            line.startColor = wireColor;
-            line.endColor   = wireColor;
-
-            if (line.material != null)
-                line.material.color = wireColor;
+            SetColor(wireColor);
         }
 
         // ── Catenary curve ────────────────────────────────────────────────────
@@ -156,10 +161,12 @@ namespace PlacementSystem
             if (line == null)
                 return;
 
-            // Use a simple unlit material so the wire is always visible
-            var mat = new Material(Shader.Find("Sprites/Default"));
-            mat.color = wireColor;
-            line.material = mat;
+            // One shared white unlit material for every wire; the actual colour
+            // comes from the LineRenderer vertex colours, so re-tinting a wire
+            // never clones the material.
+            if (sharedMaterial == null)
+                sharedMaterial = new Material(Shader.Find("Sprites/Default")) { color = Color.white };
+            line.sharedMaterial = sharedMaterial;
 
             line.startColor      = wireColor;
             line.endColor        = wireColor;

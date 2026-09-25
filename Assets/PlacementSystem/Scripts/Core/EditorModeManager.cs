@@ -8,23 +8,16 @@ namespace PlacementSystem
     /// <summary>
     /// Central keyboard-mode switcher for the placement editor.
     ///
-    ///   1  →  Normal mode  (object selection, translate / rotate gizmo)
-    ///   2  →  Wire Connect mode  (draw wires between connectors)
-    ///   3  →  Wire Delete  mode  (click a wire to remove it)
+    ///   1       →  Normal mode  (object selection, translate / rotate gizmo)
+    ///   2       →  Wire Connect mode  (draw wires between connectors)
+    ///   3       →  Wire Delete  mode  (click a wire to remove it)
+    ///   Escape  →  cancel the half-built wire, otherwise back to Normal
     ///
     /// Add this component to the same Manager GameObject as
     /// <see cref="WireConnectionMode"/> and <see cref="WireDeleteMode"/>.
-    /// The three sibling scripts keep their own per-mode logic;
-    /// this script is the only place that reads keys 1 / 2 / 3
-    /// and decides which mode to activate or deactivate.
-    ///
-    /// ── Migration note ────────────────────────────────────────────────────────
-    /// <see cref="WireConnectionMode"/> and <see cref="WireDeleteMode"/> no longer
-    /// handle their own toggle keys — remove (or leave harmless) any duplicate
-    /// HandleModeToggle calls if you edited those files separately.
-    /// This script supersedes them; the individual ForceDeactivate / ForceActivate
-    /// public methods on those classes are still used here.
-    /// ─────────────────────────────────────────────────────────────────────────
+    /// The sibling scripts keep their own per-mode logic; this script is the
+    /// only place that reads the mode keys, so <see cref="CurrentMode"/>
+    /// always matches the mode that is actually running.
     /// </summary>
     public class EditorModeManager : MonoBehaviour
     {
@@ -59,6 +52,12 @@ namespace PlacementSystem
 
         private void Update()
         {
+            if (WasEscapePressed())
+            {
+                HandleEscape();
+                return;
+            }
+
             var key = ReadModeKey();
             if (key == 0)
                 return;
@@ -113,7 +112,26 @@ namespace PlacementSystem
             }
         }
 
+        private void HandleEscape()
+        {
+            if (currentMode == EditorMode.WireConnect && wireConnectMode != null &&
+                wireConnectMode.TryCancelPendingWire())
+                return;
+
+            SwitchTo(EditorMode.Normal);
+        }
+
         // ── Key reading ───────────────────────────────────────────────────────
+
+        private static bool WasEscapePressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var kb = Keyboard.current;
+            return kb != null && kb.escapeKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.Escape);
+#endif
+        }
 
         /// <summary>Returns 1, 2, or 3 if the corresponding key was pressed this frame; otherwise 0.</summary>
         private static int ReadModeKey()

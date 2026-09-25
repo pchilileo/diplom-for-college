@@ -14,7 +14,8 @@ namespace PlacementSystem
     /// • All EnergyConnector points in the scene light up (cyan).
     /// • Click a connector → it turns green (first endpoint selected).
     /// • Click another connector → a wire is created between them.
-    /// • Press <b>2</b> or <b>Escape</b> to cancel at any time.
+    /// • <b>Escape</b> drops the first endpoint; with nothing picked it leaves
+    ///   the mode (handled by <see cref="EditorModeManager"/>).
     ///
     /// ── Setup in the Unity Editor ─────────────────────────────────────────────
     /// 1. Add this component to any persistent Manager GameObject.
@@ -41,9 +42,8 @@ namespace PlacementSystem
         // ── Runtime state ─────────────────────────────────────────────────────
 
         private bool isActive;
-        private WireDeleteMode _deleteMode;
 
-        /// <summary>True while wire-connection mode is active. Read by WireDeleteMode for mutual exclusion.</summary>
+        /// <summary>True while wire-connection mode is active.</summary>
         public bool IsActive => isActive;
         private EnergyConnector firstConnector;
 
@@ -61,32 +61,18 @@ namespace PlacementSystem
                 sceneCamera = Camera.main;
         }
 
-
-        private void Start()
-        {
-            // Hide every connector that already exists in the scene at startup.
-            // Connectors spawned later at runtime are hidden by EnergyConnector.Awake.
-            var found = FindObjectsByType<EnergyConnector>(FindObjectsSortMode.None);
-            foreach (var c in found)
-                c.gameObject.SetActive(false);
-        }
-
         private void Update()
         {
-            HandleModeToggle();
-
             if (!isActive)
                 return;
 
             HandleHover();
             HandleClick();
-            HandleCancel();
         }
 
         // ── Mode toggle ───────────────────────────────────────────────────────
 
-        // Key handling is delegated to EditorModeManager (keys 1/2/3).
-        // These public entry-points are called by that manager.
+        // All mode switching (keys 1/2/3, Escape) is owned by EditorModeManager.
 
         /// <summary>Activate wire-connection mode. Called by <see cref="EditorModeManager"/>.</summary>
         public void ForceActivate()
@@ -95,25 +81,29 @@ namespace PlacementSystem
                 Activate();
         }
 
-        private void HandleModeToggle()
-        {
-            // Intentionally empty — EditorModeManager owns all mode-key logic.
-        }
-
-        /// <summary>Called by WireDeleteMode to mutually exclude modes.</summary>
+        /// <summary>Deactivate wire-connection mode. Called by <see cref="EditorModeManager"/>.</summary>
         public void ForceDeactivate()
         {
             if (isActive)
                 Deactivate();
         }
 
+        /// <summary>
+        /// Drops the half-built wire, if any. Returns false when there was
+        /// nothing to cancel, so the caller can leave the mode instead.
+        /// </summary>
+        public bool TryCancelPendingWire()
+        {
+            if (!isActive || firstConnector == null)
+                return false;
+
+            firstConnector.SetHighlight(EnergyConnector.HighlightState.Available);
+            firstConnector = null;
+            return true;
+        }
+
         private void Activate()
         {
-            // Deactivate delete mode if it's running
-            if (_deleteMode == null)
-                _deleteMode = FindAnyObjectByType<WireDeleteMode>();
-            _deleteMode?.ForceDeactivate();
-
             isActive = true;
             firstConnector = null;
 
@@ -125,7 +115,7 @@ namespace PlacementSystem
 
             // Find all connectors, enable their GameObjects, then highlight them
             RefreshConnectorList();
-            SetAllGameObjectsActive(true);
+            SetAllVisible(true);
             SetAllHighlights(EnergyConnector.HighlightState.Available);
 
             Debug.Log("[WireConnectionMode] Activated — click a connector to start a wire.");
@@ -137,7 +127,7 @@ namespace PlacementSystem
 
             // Reset highlights before hiding so renderers end up in idle state
             SetAllHighlights(EnergyConnector.HighlightState.Idle);
-            SetAllGameObjectsActive(false);
+            SetAllVisible(false);
 
             firstConnector   = null;
             hoveredConnector = null;
@@ -210,7 +200,10 @@ namespace PlacementSystem
                     return;
                 }
 
-                CreateWire(firstConnector, hit);
+                if (firstConnector.IsConnectedTo(hit))
+                    Debug.Log("[WireConnectionMode] These connectors are already joined by a wire.");
+                else
+                    CreateWire(firstConnector, hit);
 
                 // Reset for next wire
                 firstConnector.SetHighlight(EnergyConnector.HighlightState.Available);
@@ -220,25 +213,6 @@ namespace PlacementSystem
                 // Refresh so the new wire's connector is still highlighted
                 SetAllHighlights(EnergyConnector.HighlightState.Available);
             }
-        }
-
-        // ── Cancel ────────────────────────────────────────────────────────────
-
-        private void HandleCancel()
-        {
-            var escape = false;
-
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            if (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
-                escape = true;
-#else
-            if (Input.GetKeyDown(KeyCode.Escape))
-                escape = true;
-#endif
-
-            if (escape)
-                Deactivate();
         }
 
         // ── Wire creation ─────────────────────────────────────────────────────
@@ -275,7 +249,7 @@ namespace PlacementSystem
         // ── Connector management ──────────────────────────────────────────────
 
         /// <summary>
-        /// Finds every EnergyConnector currently active in the scene.
+        /// Finds every EnergyConnector currently in the scene.
         /// Called once when the mode activates.
         /// </summary>
         private void RefreshConnectorList()
@@ -294,15 +268,15 @@ namespace PlacementSystem
         }
 
         /// <summary>
-        /// Shows or hides the GameObject of every known connector.
+        /// Shows or hides the marker of every known connector.
         /// Connectors are hidden by default and only shown while the mode is active.
         /// </summary>
-        private void SetAllGameObjectsActive(bool active = true)
+        private void SetAllVisible(bool visible)
         {
             allConnectors.RemoveAll(c => c == null);
 
             foreach (var connector in allConnectors)
-                connector.gameObject.GetComponent<MeshRenderer>().enabled = active;
+                connector.SetVisible(visible);
         }
 
         // ── Connector picking ─────────────────────────────────────────────────
