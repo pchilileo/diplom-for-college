@@ -373,10 +373,14 @@ namespace PlacementSystem.Editor
             var toolRow = NewUi("ToolRow", toolBody);
             var toolLayout = toolRow.AddComponent<HorizontalLayoutGroup>();
             toolLayout.spacing = 2f;
-            SetControl(toolLayout, true, true, true, true);
+            // No force-expand on height: a group with childForceExpandHeight reports
+            // itself as flexible, and the inspector column would give it all spare space.
+            SetControl(toolLayout, true, true, true, false);
             Element(toolRow, minHeight: 24f);
             var translateButton = TextButton(toolRow.transform, "TranslateButton", "Перемещение   <color=#8F8F8F>T</color>", 12f);
             var rotateButton = TextButton(toolRow.transform, "RotateButton", "Поворот   <color=#8F8F8F>R</color>", 12f);
+            Element(translateButton.gameObject, prefHeight: 24f, flexWidth: 1f);
+            Element(rotateButton.gameObject, prefHeight: 24f, flexWidth: 1f);
 
             // Connections
             var connectionsBody = Foldout(content.transform, "Подключения", out _);
