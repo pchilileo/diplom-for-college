@@ -88,7 +88,7 @@ namespace PlacementSystem
                 checkManager = gameObject.AddComponent<SubstationCheckManager>();
 
             // Explicit null checks: "?." does not see Unity's fake-null objects.
-            Listen(dimButton, CloseMenu);
+            Listen(dimButton, OnDimClicked);
 
             Listen(saveButton, ShowSavePage);
             Listen(loadButton, OnLoad);
@@ -271,11 +271,50 @@ namespace PlacementSystem
 
             if (reference.IsExam)
             {
-                ShowPasswordPage(reference, path);
+                StartCoroutine(ShowPasswordPageWhenMouseReleased(reference, path));
                 return;
             }
 
             StartCheck(reference, path);
+        }
+
+        /// <summary>
+        /// A click outside the window closes it — but not a click that is the
+        /// tail of the file dialog, and never the exam password page (it is
+        /// closed only with Cancel or Escape).
+        /// </summary>
+        private void OnDimClicked()
+        {
+            if (InteractionLock.AreClicksSuppressed)
+                return;
+            if (passwordPage != null && passwordPage.activeSelf)
+                return;
+
+            CloseMenu();
+        }
+
+        /// <summary>
+        /// Right after the Windows file dialog the mouse button may still be down
+        /// (double-click on a file). Wait until it is released, so that click
+        /// can't land on the new window.
+        /// </summary>
+        private System.Collections.IEnumerator ShowPasswordPageWhenMouseReleased(SubstationSchema reference, string path)
+        {
+            var deadline = Time.unscaledTime + 1f;
+            while (IsPrimaryHeld() && Time.unscaledTime < deadline)
+                yield return null;
+            yield return null;
+
+            ShowPasswordPage(reference, path);
+        }
+
+        private static bool IsPrimaryHeld()
+        {
+#if ENABLE_INPUT_SYSTEM
+            return Mouse.current != null && Mouse.current.leftButton.isPressed;
+#else
+            return Input.GetMouseButton(0);
+#endif
         }
 
         private void ShowPasswordPage(SubstationSchema reference, string path)

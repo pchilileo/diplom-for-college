@@ -33,6 +33,22 @@ namespace PlacementSystem
         public static bool ShouldBlockCamera    => IsCameraLocked || IsDraggingAsset || IsEditingInspector || IsModalOpen;
         public static bool ShouldBlockSelection => IsDraggingAsset || IsWiringMode || IsModalOpen;
 
+        // ── Clicks after a system dialog ──────────────────────────────────────
+
+        private static float clicksSuppressedUntil;
+
+        /// <summary>
+        /// Ignore mouse clicks for a moment. Used after a Windows file dialog
+        /// closes: the last click in the dialog (e.g. the second half of a
+        /// double-click on a file) arrives in the game window afterwards.
+        /// </summary>
+        public static void SuppressClicks(float seconds)
+        {
+            clicksSuppressedUntil = Time.unscaledTime + seconds;
+        }
+
+        public static bool AreClicksSuppressed => Time.unscaledTime < clicksSuppressedUntil;
+
         // ── Escape ────────────────────────────────────────────────────────────
 
         private static int escapeConsumedFrame = -1;

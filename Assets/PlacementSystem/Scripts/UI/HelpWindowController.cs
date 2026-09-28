@@ -48,7 +48,11 @@ namespace PlacementSystem
         private void Awake()
         {
             // Explicit null checks: "?." does not see Unity's fake-null objects.
-            if (dimButton != null) dimButton.onClick.AddListener(Close);
+            if (dimButton != null) dimButton.onClick.AddListener(() =>
+            {
+                if (!InteractionLock.AreClicksSuppressed)
+                    Close();
+            });
             if (closeButton != null) closeButton.onClick.AddListener(Close);
             if (openButton != null) openButton.onClick.AddListener(Toggle);
 

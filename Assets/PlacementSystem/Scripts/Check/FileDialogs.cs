@@ -26,6 +26,7 @@ namespace PlacementSystem
 #else
             var path = Path.Combine(Application.persistentDataPath, defaultName + "." + extension);
 #endif
+            InteractionLock.SuppressClicks(DialogClickGuard);
             return EnsureExtension(path, extension);
         }
 
@@ -34,9 +35,12 @@ namespace PlacementSystem
         {
 #if UNITY_EDITOR
             var path = UnityEditor.EditorUtility.OpenFilePanel(title, DefaultDirectory, extension);
+            InteractionLock.SuppressClicks(DialogClickGuard);
             return string.IsNullOrEmpty(path) ? null : path;
 #elif UNITY_STANDALONE_WIN
-            return ShowWindowsDialog(title, string.Empty, extension, filterNameKey, save: false);
+            var path = ShowWindowsDialog(title, string.Empty, extension, filterNameKey, save: false);
+            InteractionLock.SuppressClicks(DialogClickGuard);
+            return path;
 #else
             var path = Path.Combine(Application.persistentDataPath, "file." + extension);
             return File.Exists(path) ? path : null;
@@ -63,6 +67,9 @@ namespace PlacementSystem
 
             return path + wanted;
         }
+
+        /// <summary>Seconds during which clicks are ignored after a dialog closes.</summary>
+        private const float DialogClickGuard = 0.5f;
 
         private static string DefaultDirectory => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
 

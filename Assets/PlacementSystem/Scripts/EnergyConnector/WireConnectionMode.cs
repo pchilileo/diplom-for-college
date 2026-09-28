@@ -199,7 +199,7 @@ namespace PlacementSystem
 
         private void HandleClick()
         {
-            if (!WasPrimaryClickThisFrame())
+            if (!WasPrimaryClickThisFrame() || InteractionLock.AreClicksSuppressed)
                 return;
 
             if (UiPointerUtility.IsPointerOverUi())

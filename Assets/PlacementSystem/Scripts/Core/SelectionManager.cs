@@ -39,6 +39,9 @@ namespace PlacementSystem
             if (transformGizmo != null && transformGizmo.IsDragging)
                 return;
 
+            if (InteractionLock.AreClicksSuppressed)
+                return;
+
             if (!TryGetPrimaryClick(out var mousePosition))
                 return;
 
