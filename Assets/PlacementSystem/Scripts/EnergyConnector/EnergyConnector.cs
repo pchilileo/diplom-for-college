@@ -28,6 +28,7 @@ namespace PlacementSystem
         // ── Highlight state ───────────────────────────────────────────────────
 
         private Renderer[] visualRenderers;
+        private Collider pickCollider;
         private MaterialPropertyBlock propertyBlock;
 
         private static readonly int BaseColorId     = Shader.PropertyToID("_BaseColor");
@@ -40,6 +41,62 @@ namespace PlacementSystem
         private static readonly Color HoverColor     = new(1.0f, 0.85f, 0.1f, 1f);  // yellow – hover
 
         public enum HighlightState { Idle, Available, Selected, Hover }
+
+        /// <summary>
+        /// Average half-size of the marker in world units, measured in the
+        /// marker's own axes (a world-aligned bounding box would be much larger
+        /// for a rotated or elongated marker). Used for the pick tolerance around it.
+        /// </summary>
+        public float WorldRadius
+        {
+            get
+            {
+                if (pickCollider == null)
+                    pickCollider = GetComponent<Collider>();
+
+                var scale = transform.lossyScale;
+                scale = new Vector3(Mathf.Abs(scale.x), Mathf.Abs(scale.y), Mathf.Abs(scale.z));
+
+                switch (pickCollider)
+                {
+                    case BoxCollider box:
+                        var size = Vector3.Scale(box.size, scale);
+                        return Mathf.Max(0.005f, (size.x + size.y + size.z) / 6f);
+                    case SphereCollider sphere:
+                        return Mathf.Max(0.005f, sphere.radius * (scale.x + scale.y + scale.z) / 3f);
+                }
+
+                if (pickCollider != null && pickCollider.enabled)
+                {
+                    var e = pickCollider.bounds.extents;
+                    return Mathf.Max(0.005f, (e.x + e.y + e.z) / 3f);
+                }
+
+                return 0.05f;
+            }
+        }
+
+        /// <summary>Exact test: does the ray hit this marker's collider?</summary>
+        public bool RaycastMarker(Ray ray, float maxDistance, out float distance)
+        {
+            distance = 0f;
+            if (pickCollider == null)
+                pickCollider = GetComponent<Collider>();
+            if (pickCollider == null || !pickCollider.enabled)
+                return false;
+
+            if (!pickCollider.Raycast(ray, out var hit, maxDistance))
+                return false;
+
+            distance = hit.distance;
+            return true;
+        }
+
+        /// <summary>True if <paramref name="other"/> belongs to this connector's marker.</summary>
+        public bool OwnsCollider(Collider other)
+        {
+            return other != null && other.GetComponentInParent<EnergyConnector>() == this;
+        }
 
         // ── Lifecycle ─────────────────────────────────────────────────────────
 
