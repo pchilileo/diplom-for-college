@@ -201,7 +201,7 @@ namespace PlacementSystem
                 }
 
                 if (firstConnector.IsConnectedTo(hit))
-                    EditorNotifications.Post("Эти точки уже соединены проводом");
+                    EditorNotifications.Post(Loc.Get("MSG_WIRE_ALREADY_CONNECTED"));
                 else
                     CreateWire(firstConnector, hit);
 

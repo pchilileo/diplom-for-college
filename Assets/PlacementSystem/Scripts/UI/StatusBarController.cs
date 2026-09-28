@@ -17,19 +17,16 @@ namespace PlacementSystem
         [SerializeField] private Button wireConnectModeButton;
         [SerializeField] private Button wireDeleteModeButton;
 
+        [Header("Language")]
+        [SerializeField] private Button languageButton;
+        [SerializeField] private TMP_Text languageLabel;
+
         [Header("Text")]
         [SerializeField] private TMP_Text hintLabel;
         [SerializeField] private TMP_Text messageLabel;
         [SerializeField] private float messageDuration = 3f;
 
         private float messageHideTime;
-
-        private const string NormalHint =
-            "ЛКМ — выделить   ·   Перетащить из списка — поставить   ·   ПКМ + WASD — камера   ·   T / R / Y — перемещение / поворот / масштаб   ·   Ctrl — с шагом   ·   Del — удалить   ·   F2 — эталон / проверка";
-        private const string WireConnectHint =
-            "ЛКМ по точке — начать / закончить провод   ·   Esc — отменить";
-        private const string WireDeleteHint =
-            "ЛКМ по проводу — удалить   ·   Esc — выйти";
 
         private void Awake()
         {
@@ -42,6 +39,9 @@ namespace PlacementSystem
 
             if (messageLabel != null)
                 messageLabel.gameObject.SetActive(false);
+
+            if (languageButton != null)
+                languageButton.onClick.AddListener(Loc.NextLanguage);
         }
 
         private void OnEnable()
@@ -49,7 +49,9 @@ namespace PlacementSystem
             if (modeManager != null)
                 modeManager.ModeChanged += OnModeChanged;
             EditorNotifications.MessagePosted += ShowMessage;
+            Loc.LanguageChanged += OnLanguageChanged;
 
+            OnLanguageChanged();
             OnModeChanged(modeManager != null ? modeManager.CurrentMode : EditorModeManager.EditorMode.Normal);
         }
 
@@ -58,6 +60,15 @@ namespace PlacementSystem
             if (modeManager != null)
                 modeManager.ModeChanged -= OnModeChanged;
             EditorNotifications.MessagePosted -= ShowMessage;
+            Loc.LanguageChanged -= OnLanguageChanged;
+        }
+
+        private void OnLanguageChanged()
+        {
+            if (languageLabel != null)
+                languageLabel.text = Loc.Language.ToUpperInvariant();
+
+            OnModeChanged(modeManager != null ? modeManager.CurrentMode : EditorModeManager.EditorMode.Normal);
         }
 
         private void Update()
@@ -82,9 +93,9 @@ namespace PlacementSystem
             {
                 hintLabel.text = mode switch
                 {
-                    EditorModeManager.EditorMode.WireConnect => WireConnectHint,
-                    EditorModeManager.EditorMode.WireDelete  => WireDeleteHint,
-                    _                                        => NormalHint,
+                    EditorModeManager.EditorMode.WireConnect => Loc.Get("HINT_WIRE_CONNECT"),
+                    EditorModeManager.EditorMode.WireDelete  => Loc.Get("HINT_WIRE_DELETE"),
+                    _                                        => Loc.Get("HINT_NORMAL"),
                 };
             }
         }

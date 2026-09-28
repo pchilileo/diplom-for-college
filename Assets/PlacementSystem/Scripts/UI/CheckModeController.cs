@@ -123,12 +123,14 @@ namespace PlacementSystem
         {
             checkManager.CheckStarted += ShowBanner;
             checkManager.CheckEnded += HideBanner;
+            Loc.LanguageChanged += OnLanguageChanged;
         }
 
         private void OnDisable()
         {
             checkManager.CheckStarted -= ShowBanner;
             checkManager.CheckEnded -= HideBanner;
+            Loc.LanguageChanged -= OnLanguageChanged;
             if (IsMenuOpen)
                 CloseMenu();
         }
@@ -144,6 +146,20 @@ namespace PlacementSystem
             {
                 CloseMenu();
             }
+        }
+
+        /// <summary>Texts built in code don't update themselves — rebuild them.</summary>
+        private void OnLanguageChanged()
+        {
+            if (checkManager.IsChecking && checkManager.LastResult != null)
+                ShowBanner(checkManager.LastResult);
+
+            if (!IsMenuOpen)
+                return;
+            if (mainPage != null && mainPage.activeSelf)
+                ShowMainPage();
+            else if (journalPage != null && journalPage.activeSelf)
+                ShowJournalPage();
         }
 
         // ── Window & pages ────────────────────────────────────────────────────
@@ -186,8 +202,8 @@ namespace PlacementSystem
             {
                 var result = checkManager.LastResult;
                 menuStatus.text = checking && result != null
-                    ? $"Идёт проверка: эталон {result.SchemaId} ({result.ModeName.ToLowerInvariant()}), файл «{result.FileName}»."
-                    : "Сохраните эталон, чтобы по нему проверяли другие, или загрузите эталон и проверьте свою схему.";
+                    ? Loc.Format("CHECK_MENU_STATUS_CHECKING", result.SchemaId, result.ModeName.ToLowerInvariant(), result.FileName)
+                    : Loc.Get("CHECK_MENU_STATUS_IDLE");
             }
         }
 
@@ -221,14 +237,14 @@ namespace PlacementSystem
             var password = savePasswordField != null ? savePasswordField.text : string.Empty;
             if (saveMode == SchemaMode.Exam && password.Length < MinPasswordLength)
             {
-                SetError(saveError, $"Пароль — не короче {MinPasswordLength} символов");
+                SetError(saveError, Loc.Format("SAVE_PASSWORD_TOO_SHORT", MinPasswordLength));
                 return;
             }
 
             var mode = saveMode;
             CloseMenu();
 
-            var path = FileDialogs.SaveFile("Сохранить эталон схемы", "Подстанция", SchemaFile.Extension);
+            var path = FileDialogs.SaveFile(Loc.Get("SAVE_DIALOG_TITLE"), Loc.Get("SAVE_DEFAULT_FILE_NAME"), SchemaFile.Extension);
             if (path == null)
                 return;
 
@@ -242,7 +258,7 @@ namespace PlacementSystem
         {
             CloseMenu();
 
-            var path = FileDialogs.OpenFile("Загрузить эталон для проверки", SchemaFile.Extension);
+            var path = FileDialogs.OpenFile(Loc.Get("LOAD_DIALOG_TITLE"), SchemaFile.Extension);
             if (path == null)
                 return;
 
@@ -268,7 +284,7 @@ namespace PlacementSystem
             pendingPath = path;
 
             if (passwordInfo != null)
-                passwordInfo.text = $"Эталон {reference.DisplayId} — экзаменационный.\nВведите пароль преподавателя, чтобы начать проверку.";
+                passwordInfo.text = Loc.Format("PASSWORD_INFO", reference.DisplayId);
             SetError(passwordError, null);
 
             if (loadPasswordField != null)
@@ -287,7 +303,7 @@ namespace PlacementSystem
             if (!pendingReference.CheckPassword(password))
             {
                 checkManager.LogWrongPassword(pendingReference, pendingPath);
-                SetError(passwordError, "Неверный пароль (попытка записана в журнал)");
+                SetError(passwordError, Loc.Get("PASSWORD_WRONG"));
                 if (loadPasswordField != null)
                 {
                     loadPasswordField.SetTextWithoutNotify(string.Empty);
@@ -306,8 +322,8 @@ namespace PlacementSystem
         {
             var result = checkManager.StartCheck(reference, path);
             EditorNotifications.Post(result.IsPerfect
-                ? "Проверка: всё подключено верно"
-                : $"Проверка: верно {result.CorrectWires.Count} из {result.ReferenceWires}");
+                ? Loc.Get("CHECK_RESULT_PERFECT")
+                : Loc.Format("CHECK_RESULT_SCORE", result.CorrectWires.Count, result.ReferenceWires));
         }
 
         private void OnExitCheck()
@@ -317,7 +333,7 @@ namespace PlacementSystem
                 return;
 
             checkManager.EndCheck();
-            EditorNotifications.Post("Проверка завершена — редактирование снова доступно");
+            EditorNotifications.Post(Loc.Get("CHECK_ENDED"));
         }
 
         // ── Journal ───────────────────────────────────────────────────────────
@@ -332,7 +348,7 @@ namespace PlacementSystem
             if (journalWarning != null)
             {
                 journalWarning.gameObject.SetActive(!string.IsNullOrEmpty(warning));
-                journalWarning.text = "Внимание, журнал менялся вне программы:\n" + warning;
+                journalWarning.text = Loc.Get("JOURNAL_TAMPERED") + "\n" + warning;
             }
 
             if (journalText == null)
@@ -340,7 +356,7 @@ namespace PlacementSystem
 
             if (entries.Count == 0)
             {
-                journalText.text = "Записей пока нет.";
+                journalText.text = Loc.Get("JOURNAL_EMPTY");
                 return;
             }
 
@@ -373,28 +389,28 @@ namespace PlacementSystem
 
             if (bannerTitle != null)
             {
-                var title = $"{result.ModeName} · эталон {result.SchemaId} · «{result.FileName}»";
-                bannerTitle.text = result.IsPerfect ? $"{title}: <color={correctHex}>всё верно</color>" : title;
+                var title = Loc.Format("BANNER_TITLE", result.ModeName, result.SchemaId, result.FileName);
+                bannerTitle.text = result.IsPerfect ? $"{title}: <color={correctHex}>{Loc.Get("BANNER_ALL_CORRECT")}</color>" : title;
             }
 
             if (bannerStats != null)
             {
                 bannerStats.text =
-                    $"<color={correctHex}>Верно: {result.CorrectWires.Count} из {result.ReferenceWires}</color>     " +
-                    $"<color={wrongHex}>Ошибочных: {result.WrongWires.Count}</color>     " +
-                    $"<color={missingHex}>Не подключено: {result.MissingTotal}</color>";
+                    $"<color={correctHex}>{Loc.Format("BANNER_CORRECT", result.CorrectWires.Count, result.ReferenceWires)}</color>     " +
+                    $"<color={wrongHex}>{Loc.Format("BANNER_WRONG", result.WrongWires.Count)}</color>     " +
+                    $"<color={missingHex}>{Loc.Format("BANNER_MISSING", result.MissingTotal)}</color>";
             }
 
             if (bannerDetails != null)
             {
                 var details = new StringBuilder();
                 if (result.MissingObjects.Count > 0)
-                    details.Append("Не хватает оборудования: ").Append(string.Join(", ", result.MissingObjects)).Append('\n');
+                    details.Append(Loc.Format("BANNER_MISSING_OBJECTS", string.Join(", ", result.MissingObjects))).Append('\n');
                 if (result.ExtraObjects.Count > 0)
-                    details.Append("Лишнее оборудование: ").Append(string.Join(", ", result.ExtraObjects)).Append('\n');
+                    details.Append(Loc.Format("BANNER_EXTRA_OBJECTS", string.Join(", ", result.ExtraObjects))).Append('\n');
                 if (result.MissingWithoutObjects > 0)
-                    details.Append($"Проводов, которые нельзя показать (нет оборудования): {result.MissingWithoutObjects}\n");
-                details.Append("Провода менять нельзя; объекты можно двигать, поворачивать и масштабировать.");
+                    details.Append(Loc.Format("BANNER_HIDDEN_WIRES", result.MissingWithoutObjects)).Append('\n');
+                details.Append(Loc.Get("BANNER_RULES"));
 
                 bannerDetails.text = details.ToString();
             }

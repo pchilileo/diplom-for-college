@@ -26,7 +26,7 @@ namespace PlacementSystem
 
             if (InteractionLock.IsCheckMode)
             {
-                EditorNotifications.Post("Во время проверки добавлять объекты нельзя");
+                EditorNotifications.Post(Loc.Get("MSG_CHECK_NO_PLACE"));
                 return;
             }
 

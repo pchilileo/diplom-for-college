@@ -102,7 +102,7 @@ namespace PlacementSystem
                 {
                     lStructSize = Marshal.SizeOf<OpenFileName>(),
                     hwndOwner = GetActiveWindow(),
-                    lpstrFilter = $"Схема подстанции (*.{extension})\0*.{extension}\0Все файлы (*.*)\0*.*\0\0",
+                    lpstrFilter = $"{Loc.Get("FILE_FILTER_SCHEMA")} (*.{extension})\0*.{extension}\0{Loc.Get("FILE_FILTER_ALL")} (*.*)\0*.*\0\0",
                     nFilterIndex = 1,
                     lpstrFile = buffer,
                     nMaxFile = MaxPath,

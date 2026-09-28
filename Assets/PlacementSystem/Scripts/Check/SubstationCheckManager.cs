@@ -54,7 +54,7 @@ namespace PlacementSystem
             var snapshot = SceneSnapshot.Capture();
             if (snapshot.Wires.Count == 0)
             {
-                message = "На сцене нет ни одного провода — сохранять нечего";
+                message = Loc.Get("SAVE_NO_WIRES");
                 return false;
             }
 
@@ -71,12 +71,12 @@ namespace PlacementSystem
             catch (Exception e)
             {
                 Debug.LogException(e);
-                message = "Не удалось сохранить файл: " + e.Message;
+                message = Loc.Format("SAVE_FAILED", e.Message);
                 return false;
             }
 
-            message = $"Эталон {schema.DisplayId} ({schema.ModeName.ToLowerInvariant()}) сохранён: {Path.GetFileName(path)} " +
-                      $"— объектов {snapshot.Objects.Count}, проводов {snapshot.Wires.Count}";
+            message = Loc.Format("SAVE_DONE", schema.DisplayId, schema.ModeName.ToLowerInvariant(),
+                Path.GetFileName(path), snapshot.Objects.Count, snapshot.Wires.Count);
             return true;
         }
 
@@ -102,18 +102,18 @@ namespace PlacementSystem
             catch (Exception e)
             {
                 Debug.LogException(e);
-                message = "Не удалось открыть файл: " + e.Message;
+                message = Loc.Format("LOAD_FAILED", e.Message);
             }
 
             reference = null;
-            CheckJournal.Append(fileName, null, "не открыт: " + message);
+            CheckJournal.Append(fileName, null, Loc.Format("JOURNAL_OUTCOME_NOT_OPENED", message));
             return false;
         }
 
         /// <summary>Records a wrong exam password in the journal.</summary>
         public void LogWrongPassword(SubstationSchema reference, string path)
         {
-            CheckJournal.Append(Path.GetFileName(path), reference, "неверный пароль");
+            CheckJournal.Append(Path.GetFileName(path), reference, Loc.Get("JOURNAL_OUTCOME_WRONG_PASSWORD"));
         }
 
         /// <summary>
@@ -142,9 +142,8 @@ namespace PlacementSystem
             InteractionLock.SetCheckMode(true);
             CheckStarted?.Invoke(result);
 
-            CheckJournal.Append(result.FileName, reference,
-                $"проверка: верно {result.CorrectWires.Count} из {result.ReferenceWires}, " +
-                $"ошибочных {result.WrongWires.Count}, не подключено {result.MissingTotal}");
+            CheckJournal.Append(result.FileName, reference, Loc.Format("JOURNAL_OUTCOME_CHECK",
+                result.CorrectWires.Count, result.ReferenceWires, result.WrongWires.Count, result.MissingTotal));
 
             return result;
         }

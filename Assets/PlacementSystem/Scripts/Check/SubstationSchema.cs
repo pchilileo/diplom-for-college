@@ -43,7 +43,7 @@ namespace PlacementSystem
 
         public bool IsExam => mode == SchemaMode.Exam;
         public string DisplayId => string.IsNullOrEmpty(id) ? "—" : id;
-        public string ModeName => IsExam ? "Экзамен" : "Тренировка";
+        public string ModeName => Loc.Get(IsExam ? "MODE_EXAM" : "MODE_TRAINING");
 
         // ── ID ────────────────────────────────────────────────────────────────
 
@@ -136,11 +136,11 @@ namespace PlacementSystem
         /// <exception cref="InvalidDataException">The file is not a schema, is damaged or was modified.</exception>
         public static SubstationSchema Read(string path)
         {
-            var plain = SecureContainer.Unprotect(Magic, File.ReadAllBytes(path), "схемой подстанции");
+            var plain = SecureContainer.Unprotect(Magic, File.ReadAllBytes(path), "FILE_NOT_SCHEMA");
 
             var schema = JsonUtility.FromJson<SubstationSchema>(Encoding.UTF8.GetString(plain));
             if (schema == null || schema.objects == null || schema.wires == null)
-                throw new InvalidDataException("Файл схемы повреждён.");
+                throw new InvalidDataException(Loc.Get("FILE_SCHEMA_DAMAGED"));
 
             return schema;
         }
@@ -194,22 +194,22 @@ namespace PlacementSystem
             return result;
         }
 
-        /// <param name="what">For error messages: "Файл не является {what}."</param>
+        /// <param name="wrongTypeKey">Language key of the message for "this is not such a file".</param>
         /// <exception cref="InvalidDataException">Wrong type, damaged or modified data.</exception>
-        public static byte[] Unprotect(byte[] magic, byte[] data, string what)
+        public static byte[] Unprotect(byte[] magic, byte[] data, string wrongTypeKey)
         {
             var headerLength = magic.Length + 1;
             if (data.Length < headerLength + IvLength + 16 + MacLength)
-                throw new InvalidDataException($"Файл повреждён или не является {what}.");
+                throw new InvalidDataException(Loc.Get(wrongTypeKey));
 
             for (var i = 0; i < magic.Length; i++)
             {
                 if (data[i] != magic[i])
-                    throw new InvalidDataException($"Файл не является {what}.");
+                    throw new InvalidDataException(Loc.Get(wrongTypeKey));
             }
 
             if (data[magic.Length] != FormatVersion)
-                throw new InvalidDataException("Файл сохранён в другой версии тренажёра.");
+                throw new InvalidDataException(Loc.Get("FILE_OTHER_VERSION"));
 
             var bodyLength = data.Length - MacLength;
             var expected = ComputeMac(data, bodyLength);
@@ -217,7 +217,7 @@ namespace PlacementSystem
             for (var i = 0; i < MacLength; i++)
                 diff |= expected[i] ^ data[bodyLength + i];
             if (diff != 0)
-                throw new InvalidDataException("Файл был изменён или повреждён.");
+                throw new InvalidDataException(Loc.Get("FILE_MODIFIED"));
 
             var iv = new byte[IvLength];
             Buffer.BlockCopy(data, headerLength, iv, 0, IvLength);
@@ -232,7 +232,7 @@ namespace PlacementSystem
             }
             catch (CryptographicException)
             {
-                throw new InvalidDataException("Не удалось расшифровать файл.");
+                throw new InvalidDataException(Loc.Get("FILE_DECRYPT_FAILED"));
             }
         }
 

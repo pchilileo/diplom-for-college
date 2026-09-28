@@ -148,7 +148,7 @@ namespace PlacementSystem.Editor
             iconImage.preserveAspect = true;
             iconImage.raycastTarget = false;
 
-            var label = Text(root.transform, "Label", "Оборудование", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft);
+            var label = Text(root.transform, "Label", "", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft);
             label.textWrappingMode = TextWrappingModes.Normal;
             label.overflowMode = TextOverflowModes.Ellipsis;
             label.lineSpacing = -8f;
@@ -182,7 +182,7 @@ namespace PlacementSystem.Editor
             Element(header, minHeight: 26f);
 
             var arrow = Arrow(header.transform);
-            var title = Text(header.transform, "Title", "Категория", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            var title = Text(header.transform, "Title", "", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
             Element(title.gameObject, flexWidth: 1f);
             var count = Text(header.transform, "Count", "0", 11f, UITheme.TextDim, TextAlignmentOptions.MidlineRight);
 
@@ -218,10 +218,11 @@ namespace PlacementSystem.Editor
             panel.AddComponent<Image>().color = UITheme.PanelBackground;
             SubCanvas(panel);
 
-            TabBar(panel.transform, "Оборудование");
+            TabBar(panel.transform, "LIBRARY_TITLE");
 
             // Search
-            var search = InputField(panel.transform, "Search", "Поиск…", TextAlignmentOptions.MidlineLeft, 12f);
+            var search = InputField(panel.transform, "Search", "", TextAlignmentOptions.MidlineLeft, 12f);
+            Localize((TMP_Text)search.placeholder, "LIBRARY_SEARCH_PLACEHOLDER");
             search.contentType = TMP_InputField.ContentType.Standard;
             var searchRect = search.GetComponent<RectTransform>();
             searchRect.anchorMin = new Vector2(0f, 1f);
@@ -266,7 +267,7 @@ namespace PlacementSystem.Editor
             scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHideAndExpandViewport;
             scroll.verticalScrollbarSpacing = 0f;
 
-            var noResults = Text(scrollGo.transform, "NoResults", "Ничего не найдено", 12f, UITheme.TextDim, TextAlignmentOptions.Top);
+            var noResults = Localize(Text(scrollGo.transform, "NoResults", "", 12f, UITheme.TextDim, TextAlignmentOptions.Top), "LIBRARY_NO_RESULTS");
             var noResultsRect = noResults.rectTransform;
             noResultsRect.anchorMin = new Vector2(0f, 1f);
             noResultsRect.anchorMax = new Vector2(1f, 1f);
@@ -305,11 +306,11 @@ namespace PlacementSystem.Editor
             panel.AddComponent<Image>().color = UITheme.PanelBackground;
             SubCanvas(panel);
 
-            TabBar(panel.transform, "Инспектор");
+            TabBar(panel.transform, "INSPECTOR_TITLE");
 
             // Nothing selected
-            var empty = Text(panel.transform, "EmptyState",
-                "Выберите объект на сцене,\nчтобы увидеть его свойства", 12f, UITheme.TextDim, TextAlignmentOptions.Top);
+            var empty = Localize(Text(panel.transform, "EmptyState", "", 12f, UITheme.TextDim, TextAlignmentOptions.Top),
+                "INSPECTOR_EMPTY");
             empty.textWrappingMode = TextWrappingModes.Normal;
             var emptyRect = empty.rectTransform;
             emptyRect.anchorMin = new Vector2(0f, 1f);
@@ -353,26 +354,26 @@ namespace PlacementSystem.Editor
             namesLayout.childAlignment = TextAnchor.MiddleLeft;
             SetControl(namesLayout, true, true, true, false);
             Element(names, flexWidth: 1f);
-            var title = Text(names.transform, "Title", "Объект", 14f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            var title = Text(names.transform, "Title", "", 14f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
             title.textWrappingMode = TextWrappingModes.Normal;
             title.overflowMode = TextOverflowModes.Ellipsis;
             title.maxVisibleLines = 2;
-            var subtitle = Text(names.transform, "Subtitle", "Категория", 11f, UITheme.TextDim, TextAlignmentOptions.MidlineLeft);
+            var subtitle = Text(names.transform, "Subtitle", "", 11f, UITheme.TextDim, TextAlignmentOptions.MidlineLeft);
 
             Divider(content.transform);
 
             // Transform
-            var transformBody = Foldout(content.transform, "Transform", out var transformHeader);
-            var reset = SmallButton(transformHeader.transform, "Сброс", 48f);
-            var position = VectorRow(transformBody, "Позиция", false, 0.02f, float.MinValue, "0.##");
-            var rotation = VectorRow(transformBody, "Поворот", false, 0.5f, float.MinValue, "0.#");
-            var scale = VectorRow(transformBody, "Масштаб", true, 0.005f, 0.01f, "0.###");
-            var note = Text(transformBody, "Note", "Позиция — центр основания объекта. Перетащите X / Y / Z, чтобы менять значение мышью.",
-                10f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
+            var transformBody = Foldout(content.transform, "INSPECTOR_TRANSFORM", out var transformHeader);
+            var reset = SmallButton(transformHeader.transform, "INSPECTOR_RESET", 48f);
+            var position = VectorRow(transformBody, "INSPECTOR_POSITION", false, 0.02f, float.MinValue, "0.##");
+            var rotation = VectorRow(transformBody, "INSPECTOR_ROTATION", false, 0.5f, float.MinValue, "0.#");
+            var scale = VectorRow(transformBody, "INSPECTOR_SCALE", true, 0.005f, 0.01f, "0.###");
+            var note = Localize(Text(transformBody, "Note", "", 10f, UITheme.TextDim, TextAlignmentOptions.TopLeft),
+                "INSPECTOR_TRANSFORM_NOTE");
             note.textWrappingMode = TextWrappingModes.Normal;
 
             // Tool
-            var toolBody = Foldout(content.transform, "Инструмент", out _);
+            var toolBody = Foldout(content.transform, "INSPECTOR_TOOL", out _);
             var toolRow = NewUi("ToolRow", toolBody);
             var toolLayout = toolRow.AddComponent<HorizontalLayoutGroup>();
             toolLayout.spacing = 2f;
@@ -380,23 +381,23 @@ namespace PlacementSystem.Editor
             // itself as flexible, and the inspector column would give it all spare space.
             SetControl(toolLayout, true, true, true, false);
             Element(toolRow, minHeight: 24f);
-            var translateButton = TextButton(toolRow.transform, "TranslateButton", "Перемещение  <color=#8F8F8F>T</color>", 12f);
-            var rotateButton = TextButton(toolRow.transform, "RotateButton", "Поворот  <color=#8F8F8F>R</color>", 12f);
-            var scaleButton = TextButton(toolRow.transform, "ScaleButton", "Масштаб  <color=#8F8F8F>Y</color>", 12f);
+            var translateButton = LocalizeButton(TextButton(toolRow.transform, "TranslateButton", "", 12f), "TOOL_TRANSLATE", suffix: "  <color=#8F8F8F>T</color>");
+            var rotateButton = LocalizeButton(TextButton(toolRow.transform, "RotateButton", "", 12f), "TOOL_ROTATE", suffix: "  <color=#8F8F8F>R</color>");
+            var scaleButton = LocalizeButton(TextButton(toolRow.transform, "ScaleButton", "", 12f), "TOOL_SCALE", suffix: "  <color=#8F8F8F>Y</color>");
             Element(translateButton.gameObject, prefHeight: 24f, flexWidth: 1f);
             Element(rotateButton.gameObject, prefHeight: 24f, flexWidth: 1f);
             Element(scaleButton.gameObject, prefHeight: 24f, flexWidth: 1f);
-            var toolNote = Text(toolBody, "Note", "Ctrl — шаг 0.5 м / 15° / 0.1   ·   Esc или ПКМ — отменить перетаскивание",
-                10f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
+            var toolNote = Localize(Text(toolBody, "Note", "", 10f, UITheme.TextDim, TextAlignmentOptions.TopLeft),
+                "INSPECTOR_TOOL_NOTE");
             toolNote.textWrappingMode = TextWrappingModes.Normal;
 
             // Connections
-            var connectionsBody = Foldout(content.transform, "Подключения", out _);
-            var connectors = InfoRow(connectionsBody, "Точек подключения");
-            var wires = InfoRow(connectionsBody, "Проводов");
+            var connectionsBody = Foldout(content.transform, "INSPECTOR_CONNECTIONS", out _);
+            var connectors = InfoRow(connectionsBody, "INSPECTOR_CONNECTORS");
+            var wires = InfoRow(connectionsBody, "INSPECTOR_WIRES");
 
             // Delete, pinned to the bottom
-            var delete = TextButton(panel.transform, "DeleteButton", "Удалить объект   <color=#E0A0A0>Del</color>", 12f);
+            var delete = LocalizeButton(TextButton(panel.transform, "DeleteButton", "", 12f), "INSPECTOR_DELETE", suffix: "   <color=#E0A0A0>Del</color>");
             StyleButton(delete, delete.GetComponent<Image>(), UITheme.Danger, UITheme.DangerHover, UITheme.ButtonPressed);
             var deleteRect = delete.GetComponent<RectTransform>();
             deleteRect.anchorMin = new Vector2(0f, 0f);
@@ -441,7 +442,7 @@ namespace PlacementSystem.Editor
             SetControl(layout, true, true, false, false);
             Element(row, minHeight: 20f);
 
-            var title = Text(row.transform, "Label", label, 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft);
+            var title = Localize(Text(row.transform, "Label", "", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft), label);
             Element(title.gameObject, prefWidth: 62f);
 
             Button linkButton = null;
@@ -507,7 +508,7 @@ namespace PlacementSystem.Editor
             SetControl(layout, true, true, false, false);
             Element(row, minHeight: 18f);
 
-            var title = Text(row.transform, "Label", label, 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft);
+            var title = Localize(Text(row.transform, "Label", "", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft), label);
             Element(title.gameObject, flexWidth: 1f);
             return Text(row.transform, "Value", "0", 12f, Color.white, TextAlignmentOptions.MidlineRight, FontStyles.Bold);
         }
@@ -532,15 +533,23 @@ namespace PlacementSystem.Editor
             layout.childAlignment = TextAnchor.MiddleLeft;
             SetControl(layout, true, true, false, true);
 
-            var normal = ModeTab(bar.transform, "1", "Объекты");
-            var connect = ModeTab(bar.transform, "2", "Соединение проводов");
-            var remove = ModeTab(bar.transform, "3", "Удаление проводов");
+            var normal = ModeTab(bar.transform, "1", "MODE_OBJECTS");
+            var connect = ModeTab(bar.transform, "2", "MODE_WIRE_CONNECT");
+            var remove = ModeTab(bar.transform, "3", "MODE_WIRE_DELETE");
 
             Element(NewUi("Spacer", bar.transform), flexWidth: 1f);
 
             var message = Text(bar.transform, "Message", "", 12f, UITheme.AccentBright, TextAlignmentOptions.MidlineRight, FontStyles.Bold);
             message.margin = new Vector4(0f, 0f, 24f, 0f);   // gap before the hint
             var hint = Text(bar.transform, "Hint", "", 11f, UITheme.TextDim, TextAlignmentOptions.MidlineRight);
+
+            // Language switch (cycles through the *.lang files)
+            Element(NewUi("LanguageGap", bar.transform), prefWidth: 10f);
+            var language = ModeTab(bar.transform, "", null);
+            language.name = "LanguageButton";
+            var languageLabel = language.GetComponentInChildren<TMP_Text>();
+            languageLabel.text = Loc.Language.ToUpperInvariant();
+            languageLabel.fontStyle = FontStyles.Bold;
 
             var controller = bar.AddComponent<StatusBarController>();
             var so = new SerializedObject(controller);
@@ -550,12 +559,16 @@ namespace PlacementSystem.Editor
             so.FindProperty("wireDeleteModeButton").objectReferenceValue = remove;
             so.FindProperty("hintLabel").objectReferenceValue = hint;
             so.FindProperty("messageLabel").objectReferenceValue = message;
+            so.FindProperty("languageButton").objectReferenceValue = language;
+            so.FindProperty("languageLabel").objectReferenceValue = languageLabel;
             so.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        private static Button ModeTab(Transform parent, string key, string label)
+        /// <param name="hotkey">Grey key shown before the text ("1", "2"…), may be empty.</param>
+        /// <param name="labelKey">Language key of the text; null = the caller sets the text.</param>
+        private static Button ModeTab(Transform parent, string hotkey, string labelKey)
         {
-            var go = NewUi(label, parent);
+            var go = NewUi(labelKey ?? "Tab", parent);
             var image = go.AddComponent<Image>();
             image.sprite = rounded;
             image.type = Image.Type.Sliced;
@@ -567,7 +580,9 @@ namespace PlacementSystem.Editor
             layout.childAlignment = TextAnchor.MiddleCenter;
             SetControl(layout, true, true, false, true);
 
-            Text(go.transform, "Text", $"<color=#8F8F8F>{key}</color>   {label}", 12f, UITheme.Text, TextAlignmentOptions.Center);
+            var text = Text(go.transform, "Text", "", 12f, UITheme.Text, TextAlignmentOptions.Center);
+            if (labelKey != null)
+                Localize(text, labelKey, prefix: string.IsNullOrEmpty(hotkey) ? null : $"<color=#8F8F8F>{hotkey}</color>   ");
             return button;
         }
 
@@ -612,9 +627,9 @@ namespace PlacementSystem.Editor
             titleLayout.spacing = 10f;
             titleLayout.childAlignment = TextAnchor.MiddleLeft;
             SetControl(titleLayout, true, true, false, false);
-            var bannerTitle = Text(titleRow.transform, "Title", "Проверка", 14f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            var bannerTitle = Text(titleRow.transform, "Title", "", 14f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
             Element(bannerTitle.gameObject, flexWidth: 1f);
-            var bannerExit = TextButton(titleRow.transform, "ExitButton", "Выйти из проверки", 12f);
+            var bannerExit = LocalizeButton(TextButton(titleRow.transform, "ExitButton", "", 12f), "BANNER_EXIT");
             Element(bannerExit.gameObject, prefWidth: 160f, prefHeight: 24f);
 
             var bannerStats = Text(banner.transform, "Stats", "", 13f, UITheme.Text, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
@@ -647,30 +662,29 @@ namespace PlacementSystem.Editor
             window.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
             // ── Main page
-            var mainPage = Page(window.transform, "MainPage", "Проверка схемы");
+            var mainPage = Page(window.transform, "MainPage", "CHECK_MENU_TITLE");
             var status = Text(mainPage.transform, "Status", "", 12f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
             status.textWrappingMode = TextWrappingModes.Normal;
             Element(NewUi("Gap", mainPage.transform), prefHeight: 4f);
-            var save = MenuButton(mainPage.transform, "SaveButton", "Сохранить эталон…");
-            var load = MenuButton(mainPage.transform, "LoadButton", "Загрузить эталон и проверить…");
-            var journal = MenuButton(mainPage.transform, "JournalButton", "Журнал проверок");
-            var exitCheck = MenuButton(mainPage.transform, "ExitCheckButton", "Выйти из режима проверки");
+            var save = MenuButton(mainPage.transform, "SaveButton", "CHECK_SAVE");
+            var load = MenuButton(mainPage.transform, "LoadButton", "CHECK_LOAD");
+            var journal = MenuButton(mainPage.transform, "JournalButton", "CHECK_JOURNAL");
+            var exitCheck = MenuButton(mainPage.transform, "ExitCheckButton", "CHECK_EXIT");
             StyleButton(exitCheck, exitCheck.GetComponent<Image>(), UITheme.Accent, UITheme.AccentBright, UITheme.ButtonPressed);
-            var close = MenuButton(mainPage.transform, "CloseButton", "Закрыть   <color=#8F8F8F>Esc</color>");
+            var close = MenuButton(mainPage.transform, "CloseButton", "COMMON_CLOSE", "   <color=#8F8F8F>Esc</color>");
 
             // ── Save page: mode + exam password
-            var savePage = Page(window.transform, "SavePage", "Сохранение эталона");
-            var saveHint = Text(savePage.transform, "Hint",
-                "Тренировка — эталон может загрузить любой.\nЭкзамен — для загрузки нужен пароль преподавателя.",
-                12f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
+            var savePage = Page(window.transform, "SavePage", "SAVE_TITLE");
+            var saveHint = Localize(Text(savePage.transform, "Hint", "", 12f, UITheme.TextDim, TextAlignmentOptions.TopLeft),
+                "SAVE_HINT");
             saveHint.textWrappingMode = TextWrappingModes.Normal;
 
             var modeRow = NewUi("ModeRow", savePage.transform);
             var modeLayout = modeRow.AddComponent<HorizontalLayoutGroup>();
             modeLayout.spacing = 2f;
             SetControl(modeLayout, true, true, true, false);
-            var trainingMode = TextButton(modeRow.transform, "TrainingButton", "Тренировка", 13f);
-            var examMode = TextButton(modeRow.transform, "ExamButton", "Экзамен", 13f);
+            var trainingMode = LocalizeButton(TextButton(modeRow.transform, "TrainingButton", "", 13f), "MODE_TRAINING");
+            var examMode = LocalizeButton(TextButton(modeRow.transform, "ExamButton", "", 13f), "MODE_EXAM");
             Element(trainingMode.gameObject, prefHeight: 30f, flexWidth: 1f);
             Element(examMode.gameObject, prefHeight: 30f, flexWidth: 1f);
 
@@ -678,36 +692,36 @@ namespace PlacementSystem.Editor
             var passwordGroupLayout = passwordGroup.AddComponent<VerticalLayoutGroup>();
             passwordGroupLayout.spacing = 4f;
             SetControl(passwordGroupLayout, true, true, true, false);
-            Text(passwordGroup.transform, "Label", "Пароль экзамена", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft);
-            var savePassword = PasswordField(passwordGroup.transform, "PasswordField", "Не короче 4 символов");
+            Localize(Text(passwordGroup.transform, "Label", "", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft), "SAVE_PASSWORD_LABEL");
+            var savePassword = PasswordField(passwordGroup.transform, "PasswordField", "SAVE_PASSWORD_PLACEHOLDER");
 
             var saveError = ErrorText(savePage.transform);
             var saveButtons = ButtonRow(savePage.transform);
-            var saveBack = TextButton(saveButtons, "BackButton", "Назад", 13f);
-            var saveConfirm = TextButton(saveButtons, "SaveButton", "Выбрать файл и сохранить…", 13f);
+            var saveBack = LocalizeButton(TextButton(saveButtons, "BackButton", "", 13f), "COMMON_BACK");
+            var saveConfirm = LocalizeButton(TextButton(saveButtons, "SaveButton", "", 13f), "SAVE_CONFIRM");
             StyleButton(saveConfirm, saveConfirm.GetComponent<Image>(), UITheme.Accent, UITheme.AccentBright, UITheme.ButtonPressed);
             Element(saveBack.gameObject, prefHeight: 32f, prefWidth: 100f);
             Element(saveConfirm.gameObject, prefHeight: 32f, flexWidth: 1f);
 
             // ── Password page (loading an exam reference)
-            var passwordPage = Page(window.transform, "PasswordPage", "Экзамен");
+            var passwordPage = Page(window.transform, "PasswordPage", "MODE_EXAM");
             var passwordInfo = Text(passwordPage.transform, "Info", "", 12f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
             passwordInfo.textWrappingMode = TextWrappingModes.Normal;
-            var loadPassword = PasswordField(passwordPage.transform, "PasswordField", "Пароль преподавателя");
+            var loadPassword = PasswordField(passwordPage.transform, "PasswordField", "PASSWORD_PLACEHOLDER");
             var passwordError = ErrorText(passwordPage.transform);
             var passwordButtons = ButtonRow(passwordPage.transform);
-            var passwordCancel = TextButton(passwordButtons, "CancelButton", "Отмена", 13f);
-            var passwordConfirm = TextButton(passwordButtons, "ConfirmButton", "Начать проверку", 13f);
+            var passwordCancel = LocalizeButton(TextButton(passwordButtons, "CancelButton", "", 13f), "COMMON_CANCEL");
+            var passwordConfirm = LocalizeButton(TextButton(passwordButtons, "ConfirmButton", "", 13f), "PASSWORD_CONFIRM");
             StyleButton(passwordConfirm, passwordConfirm.GetComponent<Image>(), UITheme.Accent, UITheme.AccentBright, UITheme.ButtonPressed);
             Element(passwordCancel.gameObject, prefHeight: 32f, prefWidth: 100f);
             Element(passwordConfirm.gameObject, prefHeight: 32f, flexWidth: 1f);
 
             // ── Journal page
-            var journalPage = Page(window.transform, "JournalPage", "Журнал проверок");
+            var journalPage = Page(window.transform, "JournalPage", "CHECK_JOURNAL");
             var journalWarning = Text(journalPage.transform, "Warning", "", 12f, SubstationCheckManager.WrongColor, TextAlignmentOptions.TopLeft, FontStyles.Bold);
             journalWarning.textWrappingMode = TextWrappingModes.Normal;
             var journalText = JournalList(journalPage.transform);
-            var journalBack = MenuButton(journalPage.transform, "BackButton", "Назад");
+            var journalBack = MenuButton(journalPage.transform, "BackButton", "COMMON_BACK");
 
             var controller = root.AddComponent<CheckModeController>();
             var so = new SerializedObject(controller);
@@ -761,21 +775,21 @@ namespace PlacementSystem.Editor
             banner.SetActive(false);
         }
 
-        private static Button MenuButton(Transform parent, string name, string label)
+        private static Button MenuButton(Transform parent, string name, string labelKey, string suffix = null)
         {
-            var button = TextButton(parent, name, label, 13f);
+            var button = LocalizeButton(TextButton(parent, name, "", 13f), labelKey, suffix: suffix);
             Element(button.gameObject, prefHeight: 32f);
             return button;
         }
 
         /// <summary>One page of the F2 window: a vertical stack with a title.</summary>
-        private static GameObject Page(Transform window, string name, string title)
+        private static GameObject Page(Transform window, string name, string titleKey)
         {
             var page = NewUi(name, window);
             var layout = page.AddComponent<VerticalLayoutGroup>();
             layout.spacing = 8f;
             SetControl(layout, true, true, true, false);
-            Text(page.transform, "Title", title, 16f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            Localize(Text(page.transform, "Title", "", 16f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold), titleKey);
             return page;
         }
 
@@ -788,9 +802,10 @@ namespace PlacementSystem.Editor
             return row.transform;
         }
 
-        private static TMP_InputField PasswordField(Transform parent, string name, string placeholder)
+        private static TMP_InputField PasswordField(Transform parent, string name, string placeholderKey)
         {
-            var field = InputField(parent, name, placeholder, TextAlignmentOptions.MidlineLeft, 13f);
+            var field = InputField(parent, name, "", TextAlignmentOptions.MidlineLeft, 13f);
+            Localize((TMP_Text)field.placeholder, placeholderKey);
             field.contentType = TMP_InputField.ContentType.Password;
             field.lineType = TMP_InputField.LineType.SingleLine;
             Element(field.gameObject, prefHeight: 30f);
@@ -856,7 +871,7 @@ namespace PlacementSystem.Editor
             go.AddComponent<GraphicRaycaster>();
         }
 
-        private static void TabBar(Transform panel, string title)
+        private static void TabBar(Transform panel, string titleKey)
         {
             var bar = NewUi("TabBar", panel);
             var rect = bar.GetComponent<RectTransform>();
@@ -877,15 +892,15 @@ namespace PlacementSystem.Editor
             tabRect.offsetMax = new Vector2(130f, -3f);
             tab.AddComponent<Image>().color = UITheme.PanelBackground;
 
-            var label = Text(tab.transform, "Title", title, 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            var label = Localize(Text(tab.transform, "Title", "", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft, FontStyles.Bold), titleKey);
             Stretch(label.gameObject);
             label.margin = new Vector4(10f, 0f, 6f, 0f);
         }
 
         /// <summary>Foldout section with a header row; returns the body to put rows into.</summary>
-        private static Transform Foldout(Transform parent, string title, out GameObject header)
+        private static Transform Foldout(Transform parent, string titleKey, out GameObject header)
         {
-            var root = NewUi(title + "Section", parent);
+            var root = NewUi(titleKey + "_Section", parent);
             var layout = root.AddComponent<VerticalLayoutGroup>();
             SetControl(layout, true, true, true, false);
 
@@ -901,7 +916,7 @@ namespace PlacementSystem.Editor
             Element(header, minHeight: 24f);
 
             var arrow = Arrow(header.transform);
-            var label = Text(header.transform, "Title", title, 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            var label = Localize(Text(header.transform, "Title", "", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft, FontStyles.Bold), titleKey);
             Element(label.gameObject, flexWidth: 1f);
 
             var body = NewUi("Body", root.transform);
@@ -987,9 +1002,9 @@ namespace PlacementSystem.Editor
             return button;
         }
 
-        private static Button SmallButton(Transform parent, string label, float width)
+        private static Button SmallButton(Transform parent, string labelKey, float width)
         {
-            var button = TextButton(parent, label + "Button", label, 10f);
+            var button = LocalizeButton(TextButton(parent, labelKey + "_Button", "", 10f), labelKey);
             Element(button.gameObject, prefWidth: width, prefHeight: 18f);
             return button;
         }
@@ -1061,6 +1076,24 @@ namespace PlacementSystem.Editor
             scrollbar.handleRect = handle.GetComponent<RectTransform>();
             StyleButtonColors(scrollbar, handleImage, UITheme.Button, UITheme.ButtonHover, UITheme.ButtonHover);
             return scrollbar;
+        }
+
+        // ── Localization ──────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Takes the text from the language files (Assets/StreamingAssets/Localization)
+        /// by <paramref name="key"/> and keeps it updated when the language changes.
+        /// </summary>
+        private static T Localize<T>(T text, string key, string prefix = null, string suffix = null) where T : TMP_Text
+        {
+            text.gameObject.AddComponent<LocalizedText>().Setup(key, prefix, suffix);
+            return text;
+        }
+
+        private static Button LocalizeButton(Button button, string key, string prefix = null, string suffix = null)
+        {
+            Localize(button.GetComponentInChildren<TMP_Text>(), key, prefix, suffix);
+            return button;
         }
 
         // ── Low-level helpers ─────────────────────────────────────────────────

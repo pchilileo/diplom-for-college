@@ -1,0 +1,120 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  UI texts — English
+#  Format: KEY = "text"   (\n = new line, \" = quote, {0} {1} = values from the program)
+#  Keys missing here are taken from ru.lang.
+# ─────────────────────────────────────────────────────────────────────────────
+
+LANGUAGE_NAME = "English"
+
+# ── Common ───────────────────────────────────────────────────────────────────
+COMMON_CLOSE  = "Close"
+COMMON_BACK   = "Back"
+COMMON_CANCEL = "Cancel"
+
+# ── Left panel: equipment ────────────────────────────────────────────────────
+LIBRARY_TITLE              = "Equipment"
+LIBRARY_SEARCH_PLACEHOLDER = "Search…"
+LIBRARY_NO_RESULTS         = "Nothing found"
+
+# ── Right panel: inspector ───────────────────────────────────────────────────
+INSPECTOR_TITLE          = "Inspector"
+INSPECTOR_EMPTY          = "Select an object in the scene\nto see its properties"
+INSPECTOR_TRANSFORM      = "Transform"
+INSPECTOR_RESET          = "Reset"
+INSPECTOR_POSITION       = "Position"
+INSPECTOR_ROTATION       = "Rotation"
+INSPECTOR_SCALE          = "Scale"
+INSPECTOR_TRANSFORM_NOTE = "Position is the bottom centre of the object. Drag X / Y / Z to change a value with the mouse."
+INSPECTOR_TOOL           = "Tool"
+INSPECTOR_TOOL_NOTE      = "Ctrl — step 0.5 m / 15° / 0.1   ·   Esc or RMB — cancel dragging"
+INSPECTOR_CONNECTIONS    = "Connections"
+INSPECTOR_CONNECTORS     = "Connection points"
+INSPECTOR_WIRES          = "Wires"
+INSPECTOR_DELETE         = "Delete object"
+
+TOOL_TRANSLATE = "Move"
+TOOL_ROTATE    = "Rotate"
+TOOL_SCALE     = "Scale"
+
+# ── Status bar ───────────────────────────────────────────────────────────────
+MODE_OBJECTS      = "Objects"
+MODE_WIRE_CONNECT = "Connect wires"
+MODE_WIRE_DELETE  = "Delete wires"
+
+HINT_NORMAL       = "LMB — select   ·   Drag from the list — place   ·   RMB + WASD — camera   ·   T / R / Y — move / rotate / scale   ·   Ctrl — snap   ·   Del — delete   ·   F2 — reference / check"
+HINT_WIRE_CONNECT = "LMB on a point — start / finish a wire   ·   Esc — cancel"
+HINT_WIRE_DELETE  = "LMB on a wire — delete   ·   Esc — exit"
+
+# ── Messages ─────────────────────────────────────────────────────────────────
+MSG_WIRE_ALREADY_CONNECTED = "These points are already connected"
+MSG_CHECK_NO_WIRE_EDIT     = "Wires can't be changed during a check"
+MSG_CHECK_NO_DELETE        = "Objects can't be deleted during a check"
+MSG_CHECK_NO_PLACE         = "Objects can't be added during a check"
+
+# ── Check window (F2) ────────────────────────────────────────────────────────
+CHECK_MENU_TITLE           = "Wiring check"
+CHECK_MENU_STATUS_IDLE     = "Save a reference for others to check against, or load a reference and check your own layout."
+CHECK_MENU_STATUS_CHECKING = "Checking against reference {0} ({1}), file «{2}»."
+CHECK_SAVE    = "Save reference…"
+CHECK_LOAD    = "Load reference and check…"
+CHECK_JOURNAL = "Check journal"
+CHECK_EXIT    = "Leave check mode"
+
+MODE_TRAINING = "Training"
+MODE_EXAM     = "Exam"
+
+SAVE_TITLE                = "Save reference"
+SAVE_HINT                 = "Training — anyone can load the reference.\nExam — loading requires the teacher's password."
+SAVE_PASSWORD_LABEL       = "Exam password"
+SAVE_PASSWORD_PLACEHOLDER = "At least 4 characters"
+SAVE_CONFIRM              = "Choose file and save…"
+SAVE_PASSWORD_TOO_SHORT   = "The password must be at least {0} characters"
+SAVE_DIALOG_TITLE         = "Save wiring reference"
+SAVE_DEFAULT_FILE_NAME    = "Substation"
+SAVE_NO_WIRES             = "There are no wires in the scene — nothing to save"
+SAVE_FAILED               = "Could not save the file: {0}"
+SAVE_DONE                 = "Reference {0} ({1}) saved: {2} — {3} objects, {4} wires"
+
+LOAD_DIALOG_TITLE = "Load reference to check against"
+LOAD_FAILED       = "Could not open the file: {0}"
+
+PASSWORD_INFO        = "Reference {0} is an exam.\nEnter the teacher's password to start the check."
+PASSWORD_PLACEHOLDER = "Teacher's password"
+PASSWORD_CONFIRM     = "Start check"
+PASSWORD_WRONG       = "Wrong password (the attempt was logged)"
+
+# ── Check result ─────────────────────────────────────────────────────────────
+CHECK_RESULT_PERFECT = "Check: everything is connected correctly"
+CHECK_RESULT_SCORE   = "Check: {0} of {1} correct"
+CHECK_ENDED          = "Check finished — editing is available again"
+
+BANNER_TITLE           = "{0} · reference {1} · «{2}»"
+BANNER_ALL_CORRECT     = "all correct"
+BANNER_CORRECT         = "Correct: {0} of {1}"
+BANNER_WRONG           = "Wrong: {0}"
+BANNER_MISSING         = "Not connected: {0}"
+BANNER_MISSING_OBJECTS = "Missing equipment: {0}"
+BANNER_EXTRA_OBJECTS   = "Extra equipment: {0}"
+BANNER_HIDDEN_WIRES    = "Wires that can't be shown (equipment missing): {0}"
+BANNER_RULES           = "Wires can't be changed; objects can be moved, rotated and scaled."
+BANNER_EXIT            = "Leave check"
+
+# ── Journal ──────────────────────────────────────────────────────────────────
+JOURNAL_EMPTY            = "No entries yet."
+JOURNAL_TAMPERED         = "Warning: the journal was changed outside the program:"
+JOURNAL_TAMPER_DELETED   = "the journal file was deleted"
+JOURNAL_TAMPER_MODIFIED  = "the journal file was modified or damaged"
+JOURNAL_TAMPER_REPLACED  = "the journal file was replaced with another copy"
+JOURNAL_OUTCOME_CHECK          = "check: {0} of {1} correct, {2} wrong, {3} not connected"
+JOURNAL_OUTCOME_WRONG_PASSWORD = "wrong password"
+JOURNAL_OUTCOME_NOT_OPENED     = "not opened: {0}"
+
+# ── File errors ──────────────────────────────────────────────────────────────
+FILE_NOT_SCHEMA     = "The file is not a substation reference."
+FILE_NOT_JOURNAL    = "The file is not a check journal."
+FILE_OTHER_VERSION  = "The file was saved by another version of the trainer."
+FILE_MODIFIED       = "The file was modified or damaged."
+FILE_DECRYPT_FAILED = "Could not decrypt the file."
+FILE_SCHEMA_DAMAGED = "The reference file is damaged."
+FILE_FILTER_SCHEMA  = "Substation reference"
+FILE_FILTER_ALL     = "All files"

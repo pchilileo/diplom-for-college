@@ -94,7 +94,7 @@ namespace PlacementSystem
             {
                 if (expectedCount > 0)
                 {
-                    ReportTampering("файл журнала был удалён");
+                    ReportTampering(Loc.Get("JOURNAL_TAMPER_DELETED"));
                     ResetExpected();
                 }
                 return new JournalData();
@@ -105,14 +105,14 @@ namespace PlacementSystem
             try
             {
                 bytes = File.ReadAllBytes(FilePath);
-                var plain = SecureContainer.Unprotect(Magic, bytes, "журналом проверок");
+                var plain = SecureContainer.Unprotect(Magic, bytes, "FILE_NOT_JOURNAL");
                 data = JsonUtility.FromJson<JournalData>(Encoding.UTF8.GetString(plain)) ?? new JournalData();
                 data.entries ??= new List<JournalEntry>();
             }
             catch (Exception)
             {
                 // Keep the broken file as evidence and start a new journal.
-                ReportTampering("файл журнала был изменён или повреждён");
+                ReportTampering(Loc.Get("JOURNAL_TAMPER_MODIFIED"));
                 TryBackUpBrokenFile();
                 ResetExpected();
                 return new JournalData();
@@ -122,7 +122,7 @@ namespace PlacementSystem
             if (data.entries.Count != expectedCount ||
                 (expectedFingerprint.Length > 0 && SecureContainer.Fingerprint(bytes) != expectedFingerprint))
             {
-                ReportTampering("файл журнала был заменён другой копией");
+                ReportTampering(Loc.Get("JOURNAL_TAMPER_REPLACED"));
                 // Accept this copy from now on, but the warning stays.
                 PlayerPrefs.SetInt(CountKey, data.entries.Count);
                 PlayerPrefs.SetString(FingerprintKey, SecureContainer.Fingerprint(bytes));

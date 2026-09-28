@@ -100,7 +100,7 @@ namespace PlacementSystem
 
             if (InteractionLock.IsCheckMode)
             {
-                EditorNotifications.Post("Во время проверки удалять объекты нельзя");
+                EditorNotifications.Post(Loc.Get("MSG_CHECK_NO_DELETE"));
                 return;
             }
 

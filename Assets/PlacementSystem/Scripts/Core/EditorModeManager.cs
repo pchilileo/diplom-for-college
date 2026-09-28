@@ -89,7 +89,7 @@ namespace PlacementSystem
 
             if (InteractionLock.IsCheckMode && mode != EditorMode.Normal)
             {
-                EditorNotifications.Post("Во время проверки провода менять нельзя");
+                EditorNotifications.Post(Loc.Get("MSG_CHECK_NO_WIRE_EDIT"));
                 return;
             }
 
