@@ -72,6 +72,7 @@ namespace PlacementSystem.Editor
             var left = BuildLeftPanel(canvasGo.transform, managers, database, slotPrefab, sectionPrefab);
             var right = BuildRightPanel(canvasGo.transform, managers);
             BuildStatusBar(canvasGo.transform);
+            BuildCheckUi(canvasGo.transform, managers);
 
             var uiManager = managers.GetComponent<UIManager>();
             if (uiManager != null)
@@ -567,6 +568,121 @@ namespace PlacementSystem.Editor
             SetControl(layout, true, true, false, true);
 
             Text(go.transform, "Text", $"<color=#8F8F8F>{key}</color>   {label}", 12f, UITheme.Text, TextAlignmentOptions.Center);
+            return button;
+        }
+
+        // ── Wiring check: F2 window + banner ──────────────────────────────────
+
+        private static void BuildCheckUi(Transform canvas, GameObject managers)
+        {
+            var checkManager = managers.GetComponent<SubstationCheckManager>();
+            if (checkManager == null)
+                checkManager = Undo.AddComponent<SubstationCheckManager>(managers);
+            var managerSo = new SerializedObject(checkManager);
+            managerSo.FindProperty("modeManager").objectReferenceValue = Object.FindAnyObjectByType<EditorModeManager>();
+            managerSo.ApplyModifiedPropertiesWithoutUndo();
+
+            var root = NewUi("CheckModeUI", canvas);
+            Stretch(root);
+            // Above the side panels, both for drawing and for clicks.
+            var rootCanvas = root.AddComponent<Canvas>();
+            rootCanvas.overrideSorting = true;
+            rootCanvas.sortingOrder = 100;
+            root.AddComponent<GraphicRaycaster>();
+
+            // Banner shown while checking
+            var banner = NewUi("Banner", root.transform);
+            var bannerRect = banner.GetComponent<RectTransform>();
+            bannerRect.anchorMin = bannerRect.anchorMax = new Vector2(0.5f, 1f);
+            bannerRect.pivot = new Vector2(0.5f, 1f);
+            bannerRect.anchoredPosition = new Vector2(0f, -10f);
+            bannerRect.sizeDelta = new Vector2(720f, 0f);
+            var bannerImage = banner.AddComponent<Image>();
+            bannerImage.sprite = rounded;
+            bannerImage.type = Image.Type.Sliced;
+            bannerImage.color = UITheme.Hex(0x202020, 0.95f);
+            var bannerLayout = banner.AddComponent<VerticalLayoutGroup>();
+            bannerLayout.padding = new RectOffset(16, 12, 10, 12);
+            bannerLayout.spacing = 4f;
+            SetControl(bannerLayout, true, true, true, false);
+            banner.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var titleRow = NewUi("TitleRow", banner.transform);
+            var titleLayout = titleRow.AddComponent<HorizontalLayoutGroup>();
+            titleLayout.spacing = 10f;
+            titleLayout.childAlignment = TextAnchor.MiddleLeft;
+            SetControl(titleLayout, true, true, false, false);
+            var bannerTitle = Text(titleRow.transform, "Title", "Проверка", 14f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            Element(bannerTitle.gameObject, flexWidth: 1f);
+            var bannerExit = TextButton(titleRow.transform, "ExitButton", "Выйти из проверки", 12f);
+            Element(bannerExit.gameObject, prefWidth: 160f, prefHeight: 24f);
+
+            var bannerStats = Text(banner.transform, "Stats", "", 13f, UITheme.Text, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            var bannerDetails = Text(banner.transform, "Details", "", 11f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
+            bannerDetails.textWrappingMode = TextWrappingModes.Normal;
+
+            // F2 window
+            var menu = NewUi("Menu", root.transform);
+            Stretch(menu);
+
+            var dim = NewUi("Dim", menu.transform);
+            Stretch(dim);
+            var dimImage = dim.AddComponent<Image>();
+            var dimButton = dim.AddComponent<Button>();   // click outside the window closes it
+            var dimColor = new Color(0f, 0f, 0f, 0.55f);
+            StyleButtonColors(dimButton, dimImage, dimColor, dimColor, dimColor);
+
+            var window = NewUi("Window", menu.transform);
+            var windowRect = window.GetComponent<RectTransform>();
+            windowRect.anchorMin = windowRect.anchorMax = windowRect.pivot = new Vector2(0.5f, 0.5f);
+            windowRect.sizeDelta = new Vector2(440f, 0f);
+            var windowImage = window.AddComponent<Image>();
+            windowImage.sprite = rounded;
+            windowImage.type = Image.Type.Sliced;
+            windowImage.color = UITheme.PanelBackground;
+            var windowLayout = window.AddComponent<VerticalLayoutGroup>();
+            windowLayout.padding = new RectOffset(18, 18, 16, 18);
+            windowLayout.spacing = 8f;
+            SetControl(windowLayout, true, true, true, false);
+            window.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            Text(window.transform, "Title", "Проверка схемы", 16f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            var status = Text(window.transform, "Status", "", 12f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
+            status.textWrappingMode = TextWrappingModes.Normal;
+            Element(NewUi("Gap", window.transform), prefHeight: 4f);
+
+            var save = MenuButton(window.transform, "SaveButton", "Сохранить эталон…");
+            var load = MenuButton(window.transform, "LoadButton", "Загрузить эталон и проверить…");
+            var exitCheck = MenuButton(window.transform, "ExitCheckButton", "Выйти из режима проверки");
+            StyleButton(exitCheck, exitCheck.GetComponent<Image>(), UITheme.Accent, UITheme.AccentBright, UITheme.ButtonPressed);
+            var close = MenuButton(window.transform, "CloseButton", "Закрыть   <color=#8F8F8F>Esc</color>");
+
+            var controller = root.AddComponent<CheckModeController>();
+            var so = new SerializedObject(controller);
+            so.FindProperty("checkManager").objectReferenceValue = checkManager;
+            so.FindProperty("menu").objectReferenceValue = menu;
+            so.FindProperty("saveButton").objectReferenceValue = save;
+            so.FindProperty("loadButton").objectReferenceValue = load;
+            so.FindProperty("exitCheckButton").objectReferenceValue = exitCheck;
+            so.FindProperty("closeButton").objectReferenceValue = close;
+            so.FindProperty("menuStatus").objectReferenceValue = status;
+            so.FindProperty("banner").objectReferenceValue = banner;
+            so.FindProperty("bannerTitle").objectReferenceValue = bannerTitle;
+            so.FindProperty("bannerStats").objectReferenceValue = bannerStats;
+            so.FindProperty("bannerDetails").objectReferenceValue = bannerDetails;
+            so.FindProperty("bannerExitButton").objectReferenceValue = bannerExit;
+            so.FindProperty("dimButton").objectReferenceValue = dimButton;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            // Hidden until needed (the controller itself stays active to catch F2).
+            menu.SetActive(false);
+            banner.SetActive(false);
+        }
+
+        private static Button MenuButton(Transform parent, string name, string label)
+        {
+            var button = TextButton(parent, name, label, 13f);
+            Element(button.gameObject, prefHeight: 32f);
             return button;
         }
 

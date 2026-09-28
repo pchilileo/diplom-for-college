@@ -25,7 +25,7 @@ namespace PlacementSystem
         private float messageHideTime;
 
         private const string NormalHint =
-            "ЛКМ — выделить   ·   Перетащить из списка — поставить   ·   ПКМ + WASD — камера   ·   T / R / Y — перемещение / поворот / масштаб   ·   Ctrl — с шагом   ·   Del — удалить";
+            "ЛКМ — выделить   ·   Перетащить из списка — поставить   ·   ПКМ + WASD — камера   ·   T / R / Y — перемещение / поворот / масштаб   ·   Ctrl — с шагом   ·   Del — удалить   ·   F2 — эталон / проверка";
         private const string WireConnectHint =
             "ЛКМ по точке — начать / закончить провод   ·   Esc — отменить";
         private const string WireDeleteHint =

@@ -18,10 +18,34 @@ namespace PlacementSystem
         private readonly List<(CategorySectionUI section, List<UIAssetSlot> slots)> sections = new();
         private bool isBuilt;
 
+        private CanvasGroup canvasGroup;
+
         private void Awake()
         {
             if (searchField != null)
                 searchField.onValueChanged.AddListener(ApplyFilter);
+
+            canvasGroup = GetComponent<CanvasGroup>();
+            if (canvasGroup == null)
+                canvasGroup = gameObject.AddComponent<CanvasGroup>();
+        }
+
+        private void OnEnable()
+        {
+            InteractionLock.CheckModeChanged += OnCheckModeChanged;
+            OnCheckModeChanged(InteractionLock.IsCheckMode);
+        }
+
+        private void OnDisable()
+        {
+            InteractionLock.CheckModeChanged -= OnCheckModeChanged;
+        }
+
+        /// <summary>New equipment can't be placed during a check — show the library as unavailable.</summary>
+        private void OnCheckModeChanged(bool checking)
+        {
+            if (canvasGroup != null)
+                canvasGroup.alpha = checking ? 0.4f : 1f;
         }
 
         private void Start()

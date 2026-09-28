@@ -98,6 +98,12 @@ namespace PlacementSystem
             if (selectedObject == null || PlacementManager.Instance == null)
                 return;
 
+            if (InteractionLock.IsCheckMode)
+            {
+                EditorNotifications.Post("Во время проверки удалять объекты нельзя");
+                return;
+            }
+
             // FIX: save reference BEFORE Deselect() nulls selectedObject
             var toRemove = selectedObject;
 

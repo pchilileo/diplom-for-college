@@ -140,6 +140,24 @@ namespace PlacementSystem
             if (points == null || points.Length != count)
                 points = new Vector3[count];
 
+            ComputeCurve(start, end, sagFactor, points);
+
+            line.positionCount = count;
+            line.SetPositions(points);
+
+            builtStart = start;
+            builtEnd = end;
+            isBuilt = true;
+        }
+
+        /// <summary>
+        /// Fills <paramref name="points"/> with a sagging wire between two points
+        /// (parabolic approximation of a catenary). Shared with the ghost wires
+        /// of the wiring check so both look the same.
+        /// </summary>
+        public static void ComputeCurve(Vector3 start, Vector3 end, float sagFactor, Vector3[] points)
+        {
+            var segments = points.Length - 1;
             var maxSag = Vector3.Distance(start, end) * sagFactor;
 
             // Sag direction: world down, but never along the wire itself
@@ -149,7 +167,7 @@ namespace PlacementSystem
             if (sagDir.sqrMagnitude < 0.001f)
                 sagDir = Vector3.forward; // fallback for perfectly vertical wires
 
-            for (var i = 0; i < count; i++)
+            for (var i = 0; i <= segments; i++)
             {
                 var t = i / (float)segments;
 
@@ -159,13 +177,6 @@ namespace PlacementSystem
 
                 points[i] = Vector3.Lerp(start, end, t) + sagDir * sag;
             }
-
-            line.positionCount = count;
-            line.SetPositions(points);
-
-            builtStart = start;
-            builtEnd = end;
-            isBuilt = true;
         }
 
         // ── LineRenderer setup ────────────────────────────────────────────────

@@ -125,8 +125,12 @@ namespace PlacementSystem
             // Gizmo drags, undo-less edits etc. — just mirror the transform every frame.
             RefreshValues();
 
-            if (!InteractionLock.IsEditingInspector && WasDeletePressed())
+            if (!InteractionLock.IsKeyboardCaptured && WasDeletePressed())
                 OnDeleteClicked();
+
+            // Objects can't be deleted during a wiring check.
+            if (deleteButton != null)
+                deleteButton.interactable = !InteractionLock.IsCheckMode;
         }
 
         // ── Binding ────────────────────────────────────────────────────────────

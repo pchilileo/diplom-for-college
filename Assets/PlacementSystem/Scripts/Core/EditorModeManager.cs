@@ -56,8 +56,8 @@ namespace PlacementSystem
 
         private void Update()
         {
-            // Digits and Escape typed into a text field belong to that field.
-            if (InteractionLock.IsEditingInspector)
+            // Digits and Escape typed into a text field (or an open window) belong there.
+            if (InteractionLock.IsKeyboardCaptured)
                 return;
 
             if (WasEscapePressed())
@@ -86,6 +86,12 @@ namespace PlacementSystem
         {
             if (currentMode == mode)
                 return;
+
+            if (InteractionLock.IsCheckMode && mode != EditorMode.Normal)
+            {
+                EditorNotifications.Post("Во время проверки провода менять нельзя");
+                return;
+            }
 
             // ── Leave current mode ─────────────────────────────────────────
             switch (currentMode)

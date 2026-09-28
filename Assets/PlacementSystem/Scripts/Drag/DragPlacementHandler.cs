@@ -24,6 +24,12 @@ namespace PlacementSystem
             if (asset == null || PlacementManager.Instance == null)
                 return;
 
+            if (InteractionLock.IsCheckMode)
+            {
+                EditorNotifications.Post("Во время проверки добавлять объекты нельзя");
+                return;
+            }
+
             draggingAsset = asset;
             isDragging = true;
             InteractionLock.SetDraggingAsset(true);

@@ -343,7 +343,7 @@ namespace PlacementSystem
         private void HandleModeKeys()
         {
             // Letters typed into an inspector field must not switch the tool.
-            if (InteractionLock.IsEditingInspector)
+            if (InteractionLock.IsKeyboardCaptured)
                 return;
 
 #if ENABLE_INPUT_SYSTEM
