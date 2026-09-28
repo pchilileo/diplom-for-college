@@ -646,35 +646,117 @@ namespace PlacementSystem.Editor
             SetControl(windowLayout, true, true, true, false);
             window.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-            Text(window.transform, "Title", "Проверка схемы", 16f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
-            var status = Text(window.transform, "Status", "", 12f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
+            // ── Main page
+            var mainPage = Page(window.transform, "MainPage", "Проверка схемы");
+            var status = Text(mainPage.transform, "Status", "", 12f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
             status.textWrappingMode = TextWrappingModes.Normal;
-            Element(NewUi("Gap", window.transform), prefHeight: 4f);
-
-            var save = MenuButton(window.transform, "SaveButton", "Сохранить эталон…");
-            var load = MenuButton(window.transform, "LoadButton", "Загрузить эталон и проверить…");
-            var exitCheck = MenuButton(window.transform, "ExitCheckButton", "Выйти из режима проверки");
+            Element(NewUi("Gap", mainPage.transform), prefHeight: 4f);
+            var save = MenuButton(mainPage.transform, "SaveButton", "Сохранить эталон…");
+            var load = MenuButton(mainPage.transform, "LoadButton", "Загрузить эталон и проверить…");
+            var journal = MenuButton(mainPage.transform, "JournalButton", "Журнал проверок");
+            var exitCheck = MenuButton(mainPage.transform, "ExitCheckButton", "Выйти из режима проверки");
             StyleButton(exitCheck, exitCheck.GetComponent<Image>(), UITheme.Accent, UITheme.AccentBright, UITheme.ButtonPressed);
-            var close = MenuButton(window.transform, "CloseButton", "Закрыть   <color=#8F8F8F>Esc</color>");
+            var close = MenuButton(mainPage.transform, "CloseButton", "Закрыть   <color=#8F8F8F>Esc</color>");
+
+            // ── Save page: mode + exam password
+            var savePage = Page(window.transform, "SavePage", "Сохранение эталона");
+            var saveHint = Text(savePage.transform, "Hint",
+                "Тренировка — эталон может загрузить любой.\nЭкзамен — для загрузки нужен пароль преподавателя.",
+                12f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
+            saveHint.textWrappingMode = TextWrappingModes.Normal;
+
+            var modeRow = NewUi("ModeRow", savePage.transform);
+            var modeLayout = modeRow.AddComponent<HorizontalLayoutGroup>();
+            modeLayout.spacing = 2f;
+            SetControl(modeLayout, true, true, true, false);
+            var trainingMode = TextButton(modeRow.transform, "TrainingButton", "Тренировка", 13f);
+            var examMode = TextButton(modeRow.transform, "ExamButton", "Экзамен", 13f);
+            Element(trainingMode.gameObject, prefHeight: 30f, flexWidth: 1f);
+            Element(examMode.gameObject, prefHeight: 30f, flexWidth: 1f);
+
+            var passwordGroup = NewUi("PasswordGroup", savePage.transform);
+            var passwordGroupLayout = passwordGroup.AddComponent<VerticalLayoutGroup>();
+            passwordGroupLayout.spacing = 4f;
+            SetControl(passwordGroupLayout, true, true, true, false);
+            Text(passwordGroup.transform, "Label", "Пароль экзамена", 12f, UITheme.Text, TextAlignmentOptions.MidlineLeft);
+            var savePassword = PasswordField(passwordGroup.transform, "PasswordField", "Не короче 4 символов");
+
+            var saveError = ErrorText(savePage.transform);
+            var saveButtons = ButtonRow(savePage.transform);
+            var saveBack = TextButton(saveButtons, "BackButton", "Назад", 13f);
+            var saveConfirm = TextButton(saveButtons, "SaveButton", "Выбрать файл и сохранить…", 13f);
+            StyleButton(saveConfirm, saveConfirm.GetComponent<Image>(), UITheme.Accent, UITheme.AccentBright, UITheme.ButtonPressed);
+            Element(saveBack.gameObject, prefHeight: 32f, prefWidth: 100f);
+            Element(saveConfirm.gameObject, prefHeight: 32f, flexWidth: 1f);
+
+            // ── Password page (loading an exam reference)
+            var passwordPage = Page(window.transform, "PasswordPage", "Экзамен");
+            var passwordInfo = Text(passwordPage.transform, "Info", "", 12f, UITheme.TextDim, TextAlignmentOptions.TopLeft);
+            passwordInfo.textWrappingMode = TextWrappingModes.Normal;
+            var loadPassword = PasswordField(passwordPage.transform, "PasswordField", "Пароль преподавателя");
+            var passwordError = ErrorText(passwordPage.transform);
+            var passwordButtons = ButtonRow(passwordPage.transform);
+            var passwordCancel = TextButton(passwordButtons, "CancelButton", "Отмена", 13f);
+            var passwordConfirm = TextButton(passwordButtons, "ConfirmButton", "Начать проверку", 13f);
+            StyleButton(passwordConfirm, passwordConfirm.GetComponent<Image>(), UITheme.Accent, UITheme.AccentBright, UITheme.ButtonPressed);
+            Element(passwordCancel.gameObject, prefHeight: 32f, prefWidth: 100f);
+            Element(passwordConfirm.gameObject, prefHeight: 32f, flexWidth: 1f);
+
+            // ── Journal page
+            var journalPage = Page(window.transform, "JournalPage", "Журнал проверок");
+            var journalWarning = Text(journalPage.transform, "Warning", "", 12f, SubstationCheckManager.WrongColor, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+            journalWarning.textWrappingMode = TextWrappingModes.Normal;
+            var journalText = JournalList(journalPage.transform);
+            var journalBack = MenuButton(journalPage.transform, "BackButton", "Назад");
 
             var controller = root.AddComponent<CheckModeController>();
             var so = new SerializedObject(controller);
             so.FindProperty("checkManager").objectReferenceValue = checkManager;
             so.FindProperty("menu").objectReferenceValue = menu;
+            so.FindProperty("dimButton").objectReferenceValue = dimButton;
+
+            so.FindProperty("mainPage").objectReferenceValue = mainPage;
+            so.FindProperty("menuStatus").objectReferenceValue = status;
             so.FindProperty("saveButton").objectReferenceValue = save;
             so.FindProperty("loadButton").objectReferenceValue = load;
+            so.FindProperty("journalButton").objectReferenceValue = journal;
             so.FindProperty("exitCheckButton").objectReferenceValue = exitCheck;
             so.FindProperty("closeButton").objectReferenceValue = close;
-            so.FindProperty("menuStatus").objectReferenceValue = status;
+
+            so.FindProperty("savePage").objectReferenceValue = savePage;
+            so.FindProperty("trainingModeButton").objectReferenceValue = trainingMode;
+            so.FindProperty("examModeButton").objectReferenceValue = examMode;
+            so.FindProperty("savePasswordGroup").objectReferenceValue = passwordGroup;
+            so.FindProperty("savePasswordField").objectReferenceValue = savePassword;
+            so.FindProperty("saveError").objectReferenceValue = saveError;
+            so.FindProperty("saveConfirmButton").objectReferenceValue = saveConfirm;
+            so.FindProperty("saveBackButton").objectReferenceValue = saveBack;
+
+            so.FindProperty("passwordPage").objectReferenceValue = passwordPage;
+            so.FindProperty("passwordInfo").objectReferenceValue = passwordInfo;
+            so.FindProperty("loadPasswordField").objectReferenceValue = loadPassword;
+            so.FindProperty("passwordError").objectReferenceValue = passwordError;
+            so.FindProperty("passwordConfirmButton").objectReferenceValue = passwordConfirm;
+            so.FindProperty("passwordCancelButton").objectReferenceValue = passwordCancel;
+
+            so.FindProperty("journalPage").objectReferenceValue = journalPage;
+            so.FindProperty("journalWarning").objectReferenceValue = journalWarning;
+            so.FindProperty("journalText").objectReferenceValue = journalText;
+            so.FindProperty("journalBackButton").objectReferenceValue = journalBack;
+
             so.FindProperty("banner").objectReferenceValue = banner;
             so.FindProperty("bannerTitle").objectReferenceValue = bannerTitle;
             so.FindProperty("bannerStats").objectReferenceValue = bannerStats;
             so.FindProperty("bannerDetails").objectReferenceValue = bannerDetails;
             so.FindProperty("bannerExitButton").objectReferenceValue = bannerExit;
-            so.FindProperty("dimButton").objectReferenceValue = dimButton;
             so.ApplyModifiedPropertiesWithoutUndo();
 
             // Hidden until needed (the controller itself stays active to catch F2).
+            savePage.SetActive(false);
+            passwordPage.SetActive(false);
+            journalPage.SetActive(false);
+            saveError.gameObject.SetActive(false);
+            passwordError.gameObject.SetActive(false);
             menu.SetActive(false);
             banner.SetActive(false);
         }
@@ -684,6 +766,81 @@ namespace PlacementSystem.Editor
             var button = TextButton(parent, name, label, 13f);
             Element(button.gameObject, prefHeight: 32f);
             return button;
+        }
+
+        /// <summary>One page of the F2 window: a vertical stack with a title.</summary>
+        private static GameObject Page(Transform window, string name, string title)
+        {
+            var page = NewUi(name, window);
+            var layout = page.AddComponent<VerticalLayoutGroup>();
+            layout.spacing = 8f;
+            SetControl(layout, true, true, true, false);
+            Text(page.transform, "Title", title, 16f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
+            return page;
+        }
+
+        private static Transform ButtonRow(Transform parent)
+        {
+            var row = NewUi("Buttons", parent);
+            var layout = row.AddComponent<HorizontalLayoutGroup>();
+            layout.spacing = 8f;
+            SetControl(layout, true, true, false, false);
+            return row.transform;
+        }
+
+        private static TMP_InputField PasswordField(Transform parent, string name, string placeholder)
+        {
+            var field = InputField(parent, name, placeholder, TextAlignmentOptions.MidlineLeft, 13f);
+            field.contentType = TMP_InputField.ContentType.Password;
+            field.lineType = TMP_InputField.LineType.SingleLine;
+            Element(field.gameObject, prefHeight: 30f);
+            return field;
+        }
+
+        private static TextMeshProUGUI ErrorText(Transform parent)
+        {
+            var error = Text(parent, "Error", "", 12f, SubstationCheckManager.WrongColor, TextAlignmentOptions.MidlineLeft);
+            error.textWrappingMode = TextWrappingModes.Normal;
+            return error;
+        }
+
+        /// <summary>Scrollable rich-text list for the journal.</summary>
+        private static TextMeshProUGUI JournalList(Transform parent)
+        {
+            var scrollGo = NewUi("JournalScroll", parent);
+            var scrollImage = scrollGo.AddComponent<Image>();
+            scrollImage.sprite = rounded;
+            scrollImage.type = Image.Type.Sliced;
+            scrollImage.color = UITheme.FieldBackground;
+            Element(scrollGo, prefHeight: 340f);
+
+            var scroll = scrollGo.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 30f;
+
+            var viewport = NewUi("Viewport", scrollGo.transform);
+            Stretch(viewport, 6f);
+            viewport.AddComponent<RectMask2D>();
+            viewport.AddComponent<Image>().color = Color.clear;
+
+            var text = Text(viewport.transform, "Text", "", 12f, UITheme.Text, TextAlignmentOptions.TopLeft);
+            text.textWrappingMode = TextWrappingModes.Normal;
+            text.overflowMode = TextOverflowModes.Overflow;
+            var textRect = text.rectTransform;
+            textRect.anchorMin = new Vector2(0f, 1f);
+            textRect.anchorMax = new Vector2(1f, 1f);
+            textRect.pivot = new Vector2(0.5f, 1f);
+            textRect.offsetMin = new Vector2(4f, 0f);
+            textRect.offsetMax = new Vector2(-10f, 0f);
+            text.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var scrollbar = Scrollbar(scrollGo.transform);
+            scroll.viewport = viewport.GetComponent<RectTransform>();
+            scroll.content = textRect;
+            scroll.verticalScrollbar = scrollbar;
+            scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+            return text;
         }
 
         // ── Shared pieces ─────────────────────────────────────────────────────

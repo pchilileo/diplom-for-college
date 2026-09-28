@@ -10,7 +10,7 @@ namespace PlacementSystem
     ///
     /// Person A builds a substation and saves its wiring to a *.substation file
     /// (<see cref="TrySaveReference"/>). Person B builds their own version and
-    /// loads that file (<see cref="TryStartCheck"/>): correct wires turn green,
+    /// loads that file (<see cref="TryReadReference"/> + <see cref="StartCheck"/>): correct wires turn green,
     /// wrong / extra ones red, and missing ones appear as pulsing orange ghosts.
     /// While checking, wires can't be edited and objects can't be placed or
     /// deleted — only moved, rotated and scaled. <see cref="EndCheck"/> restores
@@ -48,7 +48,8 @@ namespace PlacementSystem
 
         // ── Save ──────────────────────────────────────────────────────────────
 
-        public bool TrySaveReference(string path, out string message)
+        /// <param name="password">Exam password; ignored for <see cref="SchemaMode.Training"/>.</param>
+        public bool TrySaveReference(string path, SchemaMode mode, string password, out string message)
         {
             var snapshot = SceneSnapshot.Capture();
             if (snapshot.Wires.Count == 0)
@@ -57,9 +58,15 @@ namespace PlacementSystem
                 return false;
             }
 
+            var schema = snapshot.ToSchema();
+            schema.id = SubstationSchema.GenerateId();
+            schema.mode = mode;
+            if (mode == SchemaMode.Exam)
+                schema.SetPassword(password);
+
             try
             {
-                SchemaFile.Write(path, snapshot.ToSchema());
+                SchemaFile.Write(path, schema);
             }
             catch (Exception e)
             {
@@ -68,39 +75,64 @@ namespace PlacementSystem
                 return false;
             }
 
-            message = $"Эталон сохранён: {Path.GetFileName(path)} (объектов: {snapshot.Objects.Count}, проводов: {snapshot.Wires.Count})";
+            message = $"Эталон {schema.DisplayId} ({schema.ModeName.ToLowerInvariant()}) сохранён: {Path.GetFileName(path)} " +
+                      $"— объектов {snapshot.Objects.Count}, проводов {snapshot.Wires.Count}";
             return true;
         }
 
         // ── Check ─────────────────────────────────────────────────────────────
 
-        public bool TryStartCheck(string path, out string message)
+        /// <summary>
+        /// Reads a reference file. Failures (damaged / modified / foreign files)
+        /// are written to the journal as well.
+        /// </summary>
+        public bool TryReadReference(string path, out SubstationSchema reference, out string message)
         {
-            SubstationSchema reference;
+            var fileName = Path.GetFileName(path);
             try
             {
                 reference = SchemaFile.Read(path);
+                message = null;
+                return true;
             }
             catch (InvalidDataException e)
             {
                 message = e.Message;
-                return false;
             }
             catch (Exception e)
             {
                 Debug.LogException(e);
                 message = "Не удалось открыть файл: " + e.Message;
-                return false;
             }
 
+            reference = null;
+            CheckJournal.Append(fileName, null, "не открыт: " + message);
+            return false;
+        }
+
+        /// <summary>Records a wrong exam password in the journal.</summary>
+        public void LogWrongPassword(SubstationSchema reference, string path)
+        {
+            CheckJournal.Append(Path.GetFileName(path), reference, "неверный пароль");
+        }
+
+        /// <summary>
+        /// Compares the scene with <paramref name="reference"/> and enters check mode.
+        /// For an exam reference the password must have been verified by the caller.
+        /// </summary>
+        public CheckResult StartCheck(SubstationSchema reference, string path)
+        {
             if (IsChecking)
                 EndCheck();
 
             // Leave wire modes and drop an unfinished wire before locking wiring.
-            modeManager?.SwitchTo(EditorModeManager.EditorMode.Normal);
+            if (modeManager != null)
+                modeManager.SwitchTo(EditorModeManager.EditorMode.Normal);
 
             var result = SchemaMatcher.Compare(reference, SceneSnapshot.Capture());
             result.FileName = Path.GetFileName(path);
+            result.SchemaId = reference.DisplayId;
+            result.ModeName = reference.ModeName;
             LastResult = result;
 
             Paint(result.CorrectWires, CorrectColor);
@@ -110,10 +142,11 @@ namespace PlacementSystem
             InteractionLock.SetCheckMode(true);
             CheckStarted?.Invoke(result);
 
-            message = result.IsPerfect
-                ? "Проверка: всё подключено верно"
-                : $"Проверка: верно {result.CorrectWires.Count} из {result.ReferenceWires}";
-            return true;
+            CheckJournal.Append(result.FileName, reference,
+                $"проверка: верно {result.CorrectWires.Count} из {result.ReferenceWires}, " +
+                $"ошибочных {result.WrongWires.Count}, не подключено {result.MissingTotal}");
+
+            return result;
         }
 
         public void EndCheck()

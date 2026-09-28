@@ -121,6 +121,8 @@ namespace PlacementSystem
     public sealed class CheckResult
     {
         public string FileName;
+        public string SchemaId;
+        public string ModeName;
         public int ReferenceWires;
 
         public readonly List<WireConnection> CorrectWires = new();

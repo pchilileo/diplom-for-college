@@ -9,23 +9,59 @@ using UnityEngine.InputSystem;
 namespace PlacementSystem
 {
     /// <summary>
-    /// UI of the wiring check:
-    /// • F2 opens a window: save the reference / load and check / leave the check.
-    /// • While checking, a banner at the top shows the result and an exit button.
+    /// UI of the wiring check.
+    ///
+    /// F2 opens a window with pages:
+    /// • main     — save a reference / load and check / journal / leave the check;
+    /// • save     — choose Training or Exam (exam needs a password), then pick the file;
+    /// • password — asked when an exam reference is loaded;
+    /// • journal  — every load attempt: time, file, reference ID, mode, result.
+    ///
+    /// While checking, a banner at the top shows the result and an exit button.
     /// </summary>
     public class CheckModeController : MonoBehaviour
     {
+        private const int MinPasswordLength = 4;
+
         [SerializeField] private SubstationCheckManager checkManager;
 
-        [Header("Menu window")]
+        [Header("Window")]
         [SerializeField] private GameObject menu;
-        [SerializeField] private Button saveButton;
-        [SerializeField] private Button loadButton;
-        [SerializeField] private Button exitCheckButton;
-        [SerializeField] private Button closeButton;
         [Tooltip("Dark background behind the window: a click outside the window closes it.")]
         [SerializeField] private Button dimButton;
+
+        [Header("Main page")]
+        [SerializeField] private GameObject mainPage;
         [SerializeField] private TMP_Text menuStatus;
+        [SerializeField] private Button saveButton;
+        [SerializeField] private Button loadButton;
+        [SerializeField] private Button journalButton;
+        [SerializeField] private Button exitCheckButton;
+        [SerializeField] private Button closeButton;
+
+        [Header("Save page")]
+        [SerializeField] private GameObject savePage;
+        [SerializeField] private Button trainingModeButton;
+        [SerializeField] private Button examModeButton;
+        [SerializeField] private GameObject savePasswordGroup;
+        [SerializeField] private TMP_InputField savePasswordField;
+        [SerializeField] private TMP_Text saveError;
+        [SerializeField] private Button saveConfirmButton;
+        [SerializeField] private Button saveBackButton;
+
+        [Header("Password page")]
+        [SerializeField] private GameObject passwordPage;
+        [SerializeField] private TMP_Text passwordInfo;
+        [SerializeField] private TMP_InputField loadPasswordField;
+        [SerializeField] private TMP_Text passwordError;
+        [SerializeField] private Button passwordConfirmButton;
+        [SerializeField] private Button passwordCancelButton;
+
+        [Header("Journal page")]
+        [SerializeField] private GameObject journalPage;
+        [SerializeField] private TMP_Text journalWarning;
+        [SerializeField] private TMP_Text journalText;
+        [SerializeField] private Button journalBackButton;
 
         [Header("Check banner")]
         [SerializeField] private GameObject banner;
@@ -34,7 +70,15 @@ namespace PlacementSystem
         [SerializeField] private TMP_Text bannerDetails;
         [SerializeField] private Button bannerExitButton;
 
-        private static string Hex(Color color) => "#" + ColorUtility.ToHtmlStringRGB(color);
+        private SchemaMode saveMode = SchemaMode.Training;
+
+        // Exam reference waiting for the password
+        private SubstationSchema pendingReference;
+        private string pendingPath;
+
+        private bool IsMenuOpen => menu != null && menu.activeSelf;
+
+        // ── Lifecycle ─────────────────────────────────────────────────────────
 
         private void Awake()
         {
@@ -44,12 +88,30 @@ namespace PlacementSystem
                 checkManager = gameObject.AddComponent<SubstationCheckManager>();
 
             // Explicit null checks: "?." does not see Unity's fake-null objects.
-            Listen(saveButton, OnSave);
+            Listen(dimButton, CloseMenu);
+
+            Listen(saveButton, ShowSavePage);
             Listen(loadButton, OnLoad);
+            Listen(journalButton, ShowJournalPage);
             Listen(exitCheckButton, OnExitCheck);
             Listen(closeButton, CloseMenu);
-            Listen(dimButton, CloseMenu);
+
+            Listen(trainingModeButton, () => SetSaveMode(SchemaMode.Training));
+            Listen(examModeButton, () => SetSaveMode(SchemaMode.Exam));
+            Listen(saveConfirmButton, OnSaveConfirm);
+            Listen(saveBackButton, ShowMainPage);
+
+            Listen(passwordConfirmButton, OnPasswordConfirm);
+            Listen(passwordCancelButton, CloseMenu);
+
+            Listen(journalBackButton, ShowMainPage);
             Listen(bannerExitButton, OnExitCheck);
+
+            // Enter in a password field = confirm
+            if (savePasswordField != null)
+                savePasswordField.onSubmit.AddListener(_ => OnSaveConfirm());
+            if (loadPasswordField != null)
+                loadPasswordField.onSubmit.AddListener(_ => OnPasswordConfirm());
 
             if (menu != null)
                 menu.SetActive(false);
@@ -71,14 +133,12 @@ namespace PlacementSystem
                 CloseMenu();
         }
 
-        private bool IsMenuOpen => menu != null && menu.activeSelf;
-
         private void Update()
         {
             if (WasMenuKeyPressed() && !InteractionLock.IsEditingInspector)
             {
                 if (IsMenuOpen) CloseMenu();
-                else OpenMenu();
+                else ShowMainPage();
             }
             else if (IsMenuOpen && WasEscapePressed())
             {
@@ -86,9 +146,9 @@ namespace PlacementSystem
             }
         }
 
-        // ── Menu ──────────────────────────────────────────────────────────────
+        // ── Window & pages ────────────────────────────────────────────────────
 
-        public void OpenMenu()
+        private void ShowPage(GameObject page)
         {
             if (menu == null)
                 return;
@@ -96,36 +156,87 @@ namespace PlacementSystem
             menu.SetActive(true);
             InteractionLock.SetModalOpen(true);
 
+            SetActive(mainPage, page == mainPage);
+            SetActive(savePage, page == savePage);
+            SetActive(passwordPage, page == passwordPage);
+            SetActive(journalPage, page == journalPage);
+        }
+
+        public void CloseMenu()
+        {
+            pendingReference = null;
+            pendingPath = null;
+
+            if (menu != null)
+                menu.SetActive(false);
+            InteractionLock.SetModalOpen(false);
+            // A focused password field would otherwise keep the keyboard captured.
+            InteractionLock.SetEditingInspector(false);
+        }
+
+        private void ShowMainPage()
+        {
+            ShowPage(mainPage);
+
             var checking = checkManager.IsChecking;
             if (exitCheckButton != null)
                 exitCheckButton.gameObject.SetActive(checking);
 
             if (menuStatus != null)
             {
-                menuStatus.text = checking
-                    ? $"Идёт проверка по файлу «{checkManager.LastResult?.FileName}»."
+                var result = checkManager.LastResult;
+                menuStatus.text = checking && result != null
+                    ? $"Идёт проверка: эталон {result.SchemaId} ({result.ModeName.ToLowerInvariant()}), файл «{result.FileName}»."
                     : "Сохраните эталон, чтобы по нему проверяли другие, или загрузите эталон и проверьте свою схему.";
             }
         }
 
-        public void CloseMenu()
+        // ── Save ──────────────────────────────────────────────────────────────
+
+        private void ShowSavePage()
         {
-            if (menu != null)
-                menu.SetActive(false);
-            InteractionLock.SetModalOpen(false);
+            ShowPage(savePage);
+            if (savePasswordField != null)
+                savePasswordField.SetTextWithoutNotify(string.Empty);
+            SetSaveMode(SchemaMode.Training);
         }
 
-        private void OnSave()
+        private void SetSaveMode(SchemaMode mode)
         {
+            saveMode = mode;
+            PaintToggle(trainingModeButton, mode == SchemaMode.Training);
+            PaintToggle(examModeButton, mode == SchemaMode.Exam);
+            SetActive(savePasswordGroup, mode == SchemaMode.Exam);
+            SetError(saveError, null);
+
+            if (mode == SchemaMode.Exam && savePasswordField != null)
+                savePasswordField.ActivateInputField();
+        }
+
+        private void OnSaveConfirm()
+        {
+            if (savePage == null || !savePage.activeInHierarchy)
+                return;
+
+            var password = savePasswordField != null ? savePasswordField.text : string.Empty;
+            if (saveMode == SchemaMode.Exam && password.Length < MinPasswordLength)
+            {
+                SetError(saveError, $"Пароль — не короче {MinPasswordLength} символов");
+                return;
+            }
+
+            var mode = saveMode;
             CloseMenu();
 
             var path = FileDialogs.SaveFile("Сохранить эталон схемы", "Подстанция", SchemaFile.Extension);
             if (path == null)
                 return;
 
-            checkManager.TrySaveReference(path, out var message);
+            checkManager.TrySaveReference(path, mode, password, out var message);
             EditorNotifications.Post(message);
         }
+
+        // ── Load ──────────────────────────────────────────────────────────────
 
         private void OnLoad()
         {
@@ -135,8 +246,68 @@ namespace PlacementSystem
             if (path == null)
                 return;
 
-            checkManager.TryStartCheck(path, out var message);
-            EditorNotifications.Post(message);
+            if (!checkManager.TryReadReference(path, out var reference, out var error))
+            {
+                EditorNotifications.Post(error);
+                return;
+            }
+
+            if (reference.IsExam)
+            {
+                ShowPasswordPage(reference, path);
+                return;
+            }
+
+            StartCheck(reference, path);
+        }
+
+        private void ShowPasswordPage(SubstationSchema reference, string path)
+        {
+            ShowPage(passwordPage);
+            pendingReference = reference;
+            pendingPath = path;
+
+            if (passwordInfo != null)
+                passwordInfo.text = $"Эталон {reference.DisplayId} — экзаменационный.\nВведите пароль преподавателя, чтобы начать проверку.";
+            SetError(passwordError, null);
+
+            if (loadPasswordField != null)
+            {
+                loadPasswordField.SetTextWithoutNotify(string.Empty);
+                loadPasswordField.ActivateInputField();
+            }
+        }
+
+        private void OnPasswordConfirm()
+        {
+            if (pendingReference == null || passwordPage == null || !passwordPage.activeInHierarchy)
+                return;
+
+            var password = loadPasswordField != null ? loadPasswordField.text : string.Empty;
+            if (!pendingReference.CheckPassword(password))
+            {
+                checkManager.LogWrongPassword(pendingReference, pendingPath);
+                SetError(passwordError, "Неверный пароль (попытка записана в журнал)");
+                if (loadPasswordField != null)
+                {
+                    loadPasswordField.SetTextWithoutNotify(string.Empty);
+                    loadPasswordField.ActivateInputField();
+                }
+                return;
+            }
+
+            var reference = pendingReference;
+            var path = pendingPath;
+            CloseMenu();
+            StartCheck(reference, path);
+        }
+
+        private void StartCheck(SubstationSchema reference, string path)
+        {
+            var result = checkManager.StartCheck(reference, path);
+            EditorNotifications.Post(result.IsPerfect
+                ? "Проверка: всё подключено верно"
+                : $"Проверка: верно {result.CorrectWires.Count} из {result.ReferenceWires}");
         }
 
         private void OnExitCheck()
@@ -147,6 +318,44 @@ namespace PlacementSystem
 
             checkManager.EndCheck();
             EditorNotifications.Post("Проверка завершена — редактирование снова доступно");
+        }
+
+        // ── Journal ───────────────────────────────────────────────────────────
+
+        private void ShowJournalPage()
+        {
+            ShowPage(journalPage);
+
+            var entries = CheckJournal.Load();
+            var warning = CheckJournal.TamperWarning;
+
+            if (journalWarning != null)
+            {
+                journalWarning.gameObject.SetActive(!string.IsNullOrEmpty(warning));
+                journalWarning.text = "Внимание, журнал менялся вне программы:\n" + warning;
+            }
+
+            if (journalText == null)
+                return;
+
+            if (entries.Count == 0)
+            {
+                journalText.text = "Записей пока нет.";
+                return;
+            }
+
+            // Newest first
+            var text = new StringBuilder();
+            for (var i = entries.Count - 1; i >= 0; i--)
+            {
+                var e = entries[i];
+                text.Append("<color=#8F8F8F>").Append(e.time).Append("</color>   ")
+                    .Append("<b>").Append(e.schemaId).Append("</b>   ")
+                    .Append(e.mode).Append("   ")
+                    .Append(e.fileName).Append('\n')
+                    .Append("<color=#B8B8B8>      ").Append(e.outcome).Append("</color>\n");
+            }
+            journalText.text = text.ToString();
         }
 
         // ── Banner ────────────────────────────────────────────────────────────
@@ -164,9 +373,8 @@ namespace PlacementSystem
 
             if (bannerTitle != null)
             {
-                bannerTitle.text = result.IsPerfect
-                    ? $"Проверка по «{result.FileName}»: <color={correctHex}>всё верно</color>"
-                    : $"Проверка по «{result.FileName}»";
+                var title = $"{result.ModeName} · эталон {result.SchemaId} · «{result.FileName}»";
+                bannerTitle.text = result.IsPerfect ? $"{title}: <color={correctHex}>всё верно</color>" : title;
             }
 
             if (bannerStats != null)
@@ -198,10 +406,40 @@ namespace PlacementSystem
                 banner.SetActive(false);
         }
 
+        // ── Helpers ───────────────────────────────────────────────────────────
+
+        private static string Hex(Color color) => "#" + ColorUtility.ToHtmlStringRGB(color);
+
         private static void Listen(Button button, UnityEngine.Events.UnityAction action)
         {
             if (button != null)
                 button.onClick.AddListener(action);
+        }
+
+        private static void SetActive(GameObject go, bool active)
+        {
+            if (go != null)
+                go.SetActive(active);
+        }
+
+        private static void SetError(TMP_Text label, string message)
+        {
+            if (label == null)
+                return;
+            label.gameObject.SetActive(!string.IsNullOrEmpty(message));
+            label.text = message ?? string.Empty;
+        }
+
+        private static void PaintToggle(Button button, bool active)
+        {
+            if (button == null)
+                return;
+
+            var colors = button.colors;
+            colors.normalColor      = active ? UITheme.Accent : UITheme.Button;
+            colors.highlightedColor = active ? UITheme.AccentBright : UITheme.ButtonHover;
+            colors.selectedColor    = colors.normalColor;
+            button.colors = colors;
         }
 
         // ── Input ─────────────────────────────────────────────────────────────
