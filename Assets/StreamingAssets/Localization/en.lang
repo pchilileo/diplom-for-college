@@ -41,7 +41,7 @@ MODE_OBJECTS      = "Objects"
 MODE_WIRE_CONNECT = "Connect wires"
 MODE_WIRE_DELETE  = "Delete wires"
 
-HINT_NORMAL       = "LMB — select   ·   Drag from the list — place   ·   RMB + WASD — camera   ·   T / R / Y — move / rotate / scale   ·   Ctrl — snap   ·   Del — delete   ·   F2 — reference / check"
+HINT_NORMAL       = "LMB — select   ·   Drag from the list — place   ·   RMB + WASD — camera   ·   T / R / Y — move / rotate / scale   ·   Ctrl — snap   ·   Del — delete   ·   F2 — reference / check   ·   Ctrl+O — help"
 HINT_WIRE_CONNECT = "LMB on a point — start / finish a wire   ·   Esc — cancel"
 HINT_WIRE_DELETE  = "LMB on a wire — delete   ·   Esc — exit"
 
@@ -118,3 +118,31 @@ FILE_DECRYPT_FAILED = "Could not decrypt the file."
 FILE_SCHEMA_DAMAGED = "The reference file is damaged."
 FILE_FILTER_SCHEMA  = "Substation reference"
 FILE_FILTER_ALL     = "All files"
+
+# ── Help (Ctrl+O) ────────────────────────────────────────────────────────────
+HELP_TITLE       = "Help"
+HELP_HOTKEY_HINT = "Open again: Ctrl+O or the «?» button below"
+
+HELP_TAB_1_TITLE = "Getting started"
+HELP_TAB_1_BODY  = "The trainer is a sandbox where you assemble an outdoor substation switchyard from ready-made equipment, connect it with wires and then check the layout against a reference.\n\n<b>The screen</b>\n•  <b>Left</b> — equipment list by category. Drag objects from here into the scene.\n•  <b>Centre</b> — the scene.\n•  <b>Right</b> — inspector: properties of the selected object.\n•  <b>Bottom</b> — work modes (1, 2, 3), hints for the current mode, the «?» help button and the language switch.\n\nSide panels slide off the screen — click the narrow tab with an arrow on their edge.\n\n<b>Typical workflow</b>\n1.  Drag the equipment you need from the list on the left.\n2.  Arrange it: select an object and move, rotate or scale it.\n3.  Press <b>2</b> and connect the connection points with wires.\n4.  Press <b>F2</b> to save the layout as a reference or to check your layout against one."
+
+HELP_TAB_2_TITLE = "Camera"
+HELP_TAB_2_BODY  = "•  <b>Hold RMB and move the mouse</b> — look around.\n•  <b>W A S D</b> or <b>arrow keys</b> — move forward, left, back, right.\n•  <b>Q / E</b> — down / up.\n•  <b>Mouse wheel</b> — up / down (when the cursor is not over a panel).\n•  <b>Shift</b> — move faster.\n\nThe camera does not move while you type in a field, hold a gizmo handle or have a window open (help, F2)."
+
+HELP_TAB_3_TITLE = "Equipment"
+HELP_TAB_3_BODY  = "<b>Placing an object</b>\nFind it in the list on the left and drag it onto the ground. While dragging, a translucent copy follows the cursor. Release the button — the object appears and is selected.\n\n<b>The list</b>\n•  The <b>Search</b> field at the top filters equipment by name.\n•  Click a category header to collapse it; the number on the right is the item count.\n\n<b>Deleting</b>\nSelect the object and press <b>Del</b> or the «Delete object» button at the bottom of the inspector. Wires attached to the object are deleted with it.\n\nDuring a reference check objects can't be added or deleted — the list becomes translucent."
+
+HELP_TAB_4_TITLE = "Move and rotate"
+HELP_TAB_4_BODY  = "Left-click an object — it is highlighted and the <b>gizmo</b> appears at the centre of its base.\n\n<b>Tools</b> (keys or buttons in the inspector)\n•  <b>T — move.</b> Drag an arrow to move along an axis, or a coloured square between the arrows to move in a plane. The green square at the bottom moves along the ground.\n•  <b>R — rotate.</b> Drag a coloured ring to rotate around that axis. The outer light ring rotates around the view direction.\n•  <b>Y — scale.</b> Drag the cube on an axis to stretch along it; the centre cube scales uniformly.\n\n<b>Good to know</b>\n•  The handle under the cursor turns yellow — that is what a click will grab.\n•  <b>Ctrl</b> while dragging — move in steps: 0.5 m / 15° / 0.1.\n•  <b>Esc</b> or <b>RMB</b> while dragging cancels.\n\n<b>Inspector on the right</b>\n•  <b>Position</b> — coordinates of the centre of the object's base (Y = 0 means it stands on the ground).\n•  Type values (Enter to apply) or <b>drag the X / Y / Z letters</b> with the mouse.\n•  The <b>1:1</b> button keeps scale proportions.\n•  <b>Reset</b> restores the original rotation and scale."
+
+HELP_TAB_5_TITLE = "Wires"
+HELP_TAB_5_BODY  = "<b>2 — connect wires</b>\n1.  Press <b>2</b> (or the tab at the bottom). All connection points light up blue.\n2.  Click the first point — it turns green.\n3.  Click the second point — a wire appears between them.\n\n•  Clicking empty space or <b>Esc</b> cancels the started wire; a second <b>Esc</b> leaves the mode.\n•  Two points can't be connected twice.\n•  Wires follow objects when they are moved.\n\n<b>3 — delete wires</b>\nAll wires turn orange, the one under the cursor red. Click to delete it.\n\n<b>1</b> — back to the normal mode (selecting and moving objects)."
+
+HELP_TAB_6_TITLE = "Reference check"
+HELP_TAB_6_BODY  = "<b>F2</b> opens the check window.\n\n<b>Save a reference</b> (usually done by the teacher)\nBuild the correct layout and choose «Save reference…». Mode:\n•  <b>Training</b> — anyone can load the reference;\n•  <b>Exam</b> — loading requires the password you set.\nThe file gets a 4-character <b>ID</b> (e.g. A7K2). It is stored inside the file and does not change when the file is renamed. The file is encrypted: it can't be read or changed in an ordinary editor.\n\n<b>Check your layout</b>\nBuild the layout and choose «Load reference and check…» (for an exam the teacher enters the password). Wires are coloured:\n•  <color=#33D94D>green</color> — connected correctly;\n•  <color=#F23333>red</color> — extra or connected to the wrong place;\n•  <color=#FF8C0D>orange, blinking</color> — the wire is missing.\nA summary appears at the top: how many are correct, how many mistakes, which equipment is missing or extra. Identical equipment may stand anywhere — what matters is what is connected where, down to the exact point.\n\nDuring the check wires can't be changed and objects can't be added or deleted; moving, rotating and scaling are allowed. Leave with the «Leave check» button in the top banner or in the F2 window.\n\n<b>Check journal</b>\nF2 → «Check journal» lists every reference load: time, ID, mode, file and result, as well as wrong passwords. The journal can't be cleared from the program; if it is deleted or edited by hand, a warning appears."
+
+HELP_TAB_7_TITLE = "Hotkeys"
+HELP_TAB_7_BODY  = "<b>General</b>\n•  <b>Ctrl+O</b> — this help\n•  <b>F2</b> — save a reference / check\n•  <b>Esc</b> — cancel / close a window\n\n<b>Modes</b>\n•  <b>1</b> — objects (select and move)\n•  <b>2</b> — connect wires\n•  <b>3</b> — delete wires\n\n<b>Objects</b>\n•  <b>LMB</b> — select\n•  <b>T / R / Y</b> — move / rotate / scale\n•  <b>Ctrl</b> while dragging — snap to steps\n•  <b>Esc / RMB</b> while dragging — cancel\n•  <b>Del</b> — delete the selected object\n\n<b>Camera</b>\n•  <b>RMB + mouse</b> — look around\n•  <b>W A S D / arrows</b> — move\n•  <b>Q / E</b>, <b>wheel</b> — down / up\n•  <b>Shift</b> — faster\n\nHotkeys don't work while you are typing in a field."
+
+HELP_TAB_8_TITLE = "Language and texts"
+HELP_TAB_8_BODY  = "The button with the language code (<b>RU</b>, <b>EN</b>) in the bottom-right corner switches the interface language. The choice is remembered.\n\nAll interface texts, including this help, are stored in <b>StreamingAssets/Localization/*.lang</b> files next to the program. They can be opened in any text editor and corrected — changes appear on the next start.\n\nTo add a language, copy ru.lang under a new name (e.g. de.lang) and translate the lines. Untranslated lines are shown in Russian."

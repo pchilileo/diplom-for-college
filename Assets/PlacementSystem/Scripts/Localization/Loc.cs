@@ -78,6 +78,16 @@ namespace PlacementSystem
             return key;
         }
 
+        /// <summary>True if the key exists in the current language or in Russian.</summary>
+        public static bool Has(string key)
+        {
+            if (string.IsNullOrEmpty(key))
+                return false;
+
+            EnsureLoaded();
+            return current.ContainsKey(key) || fallback.ContainsKey(key);
+        }
+
         /// <summary><see cref="Get"/> with {0}, {1}… replaced by <paramref name="args"/>.</summary>
         public static string Format(string key, params object[] args)
         {

@@ -140,7 +140,7 @@ namespace PlacementSystem
             if (WasMenuKeyPressed() && !InteractionLock.IsEditingInspector)
             {
                 if (IsMenuOpen) CloseMenu();
-                else ShowMainPage();
+                else if (!InteractionLock.IsModalOpen) ShowMainPage();   // not on top of the help window
             }
             else if (IsMenuOpen && WasEscapePressed())
             {

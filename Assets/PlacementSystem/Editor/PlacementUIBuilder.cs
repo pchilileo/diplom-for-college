@@ -71,8 +71,9 @@ namespace PlacementSystem.Editor
 
             var left = BuildLeftPanel(canvasGo.transform, managers, database, slotPrefab, sectionPrefab);
             var right = BuildRightPanel(canvasGo.transform, managers);
-            BuildStatusBar(canvasGo.transform);
+            var helpButton = BuildStatusBar(canvasGo.transform);
             BuildCheckUi(canvasGo.transform, managers);
+            BuildHelpUi(canvasGo.transform, helpButton);
 
             var uiManager = managers.GetComponent<UIManager>();
             if (uiManager != null)
@@ -515,7 +516,8 @@ namespace PlacementSystem.Editor
 
         // ── Status bar ────────────────────────────────────────────────────────
 
-        private static void BuildStatusBar(Transform canvas)
+        /// <returns>The "?" button that opens the help window.</returns>
+        private static Button BuildStatusBar(Transform canvas)
         {
             var bar = NewUi("StatusBar", canvas);
             var rect = bar.GetComponent<RectTransform>();
@@ -543,8 +545,13 @@ namespace PlacementSystem.Editor
             message.margin = new Vector4(0f, 0f, 24f, 0f);   // gap before the hint
             var hint = Text(bar.transform, "Hint", "", 11f, UITheme.TextDim, TextAlignmentOptions.MidlineRight);
 
-            // Language switch (cycles through the *.lang files)
+            // Help ("?") and language switch (cycles through the *.lang files)
             Element(NewUi("LanguageGap", bar.transform), prefWidth: 10f);
+            var help = ModeTab(bar.transform, "", null);
+            help.name = "HelpButton";
+            var helpLabel = help.GetComponentInChildren<TMP_Text>();
+            helpLabel.text = "?";
+            helpLabel.fontStyle = FontStyles.Bold;
             var language = ModeTab(bar.transform, "", null);
             language.name = "LanguageButton";
             var languageLabel = language.GetComponentInChildren<TMP_Text>();
@@ -562,6 +569,7 @@ namespace PlacementSystem.Editor
             so.FindProperty("languageButton").objectReferenceValue = language;
             so.FindProperty("languageLabel").objectReferenceValue = languageLabel;
             so.ApplyModifiedPropertiesWithoutUndo();
+            return help;
         }
 
         /// <param name="hotkey">Grey key shown before the text ("1", "2"…), may be empty.</param>
@@ -584,6 +592,144 @@ namespace PlacementSystem.Editor
             if (labelKey != null)
                 Localize(text, labelKey, prefix: string.IsNullOrEmpty(hotkey) ? null : $"<color=#8F8F8F>{hotkey}</color>   ");
             return button;
+        }
+
+        // ── Help window (Ctrl+O) ──────────────────────────────────────────────
+
+        private static void BuildHelpUi(Transform canvas, Button openButton)
+        {
+            var root = NewUi("HelpUI", canvas);
+            Stretch(root);
+            // Above everything else, including the F2 window.
+            var rootCanvas = root.AddComponent<Canvas>();
+            rootCanvas.overrideSorting = true;
+            rootCanvas.sortingOrder = 110;
+            root.AddComponent<GraphicRaycaster>();
+
+            var window = NewUi("Window", root.transform);
+            Stretch(window);
+
+            var dim = NewUi("Dim", window.transform);
+            Stretch(dim);
+            var dimImage = dim.AddComponent<Image>();
+            var dimButton = dim.AddComponent<Button>();   // click outside closes
+            var dimColor = new Color(0f, 0f, 0f, 0.6f);
+            StyleButtonColors(dimButton, dimImage, dimColor, dimColor, dimColor);
+
+            // Panel
+            var panel = NewUi("Panel", window.transform);
+            var panelRect = panel.GetComponent<RectTransform>();
+            panelRect.anchorMin = panelRect.anchorMax = panelRect.pivot = new Vector2(0.5f, 0.5f);
+            panelRect.sizeDelta = new Vector2(1000f, 660f);
+            var panelImage = panel.AddComponent<Image>();
+            panelImage.sprite = rounded;
+            panelImage.type = Image.Type.Sliced;
+            panelImage.color = UITheme.PanelBackground;
+
+            // Header: title + close
+            const float headerHeight = 40f;
+            var header = NewUi("Header", panel.transform);
+            var headerRect = header.GetComponent<RectTransform>();
+            headerRect.anchorMin = new Vector2(0f, 1f);
+            headerRect.anchorMax = new Vector2(1f, 1f);
+            headerRect.pivot = new Vector2(0.5f, 1f);
+            headerRect.offsetMin = new Vector2(0f, -headerHeight);
+            headerRect.offsetMax = Vector2.zero;
+            header.AddComponent<Image>().color = UITheme.WindowTab;
+            var headerLayout = header.AddComponent<HorizontalLayoutGroup>();
+            headerLayout.padding = new RectOffset(16, 8, 6, 6);
+            headerLayout.spacing = 8f;
+            headerLayout.childAlignment = TextAnchor.MiddleLeft;
+            SetControl(headerLayout, true, true, false, false);
+
+            var title = Localize(Text(header.transform, "Title", "", 15f, Color.white, TextAlignmentOptions.MidlineLeft, FontStyles.Bold), "HELP_TITLE");
+            Element(title.gameObject, flexWidth: 1f);
+            var hint = Localize(Text(header.transform, "Hint", "", 11f, UITheme.TextDim, TextAlignmentOptions.MidlineRight), "HELP_HOTKEY_HINT");
+            Element(hint.gameObject, prefWidth: 260f);
+            var close = LocalizeButton(TextButton(header.transform, "CloseButton", "", 12f), "COMMON_CLOSE", suffix: "   <color=#8F8F8F>Esc</color>");
+            Element(close.gameObject, prefWidth: 130f, prefHeight: 28f);
+
+            // Tab column
+            const float tabsWidth = 250f;
+            var tabs = NewUi("Tabs", panel.transform);
+            var tabsRect = tabs.GetComponent<RectTransform>();
+            tabsRect.anchorMin = new Vector2(0f, 0f);
+            tabsRect.anchorMax = new Vector2(0f, 1f);
+            tabsRect.pivot = new Vector2(0f, 0.5f);
+            tabsRect.offsetMin = new Vector2(0f, 0f);
+            tabsRect.offsetMax = new Vector2(tabsWidth, -headerHeight);
+            tabs.AddComponent<Image>().color = UITheme.Hex(0x303030);
+            var tabsLayout = tabs.AddComponent<VerticalLayoutGroup>();
+            tabsLayout.padding = new RectOffset(8, 8, 10, 10);
+            tabsLayout.spacing = 2f;
+            SetControl(tabsLayout, true, true, true, false);
+
+            // Template cloned for every tab at runtime
+            var template = TextButton(tabs.transform, "TabTemplate", "", 13f);
+            StyleButton(template, template.GetComponent<Image>(), Color.clear, UITheme.Hover, UITheme.ButtonPressed);
+            var templateText = template.GetComponentInChildren<TMP_Text>();
+            templateText.alignment = TextAlignmentOptions.MidlineLeft;
+            templateText.margin = new Vector4(12f, 0f, 8f, 0f);
+            Element(template.gameObject, prefHeight: 34f);
+
+            // Page: scrollable title + body
+            var scrollGo = NewUi("Page", panel.transform);
+            var scrollRect = scrollGo.GetComponent<RectTransform>();
+            scrollRect.anchorMin = Vector2.zero;
+            scrollRect.anchorMax = Vector2.one;
+            scrollRect.offsetMin = new Vector2(tabsWidth, 0f);
+            scrollRect.offsetMax = new Vector2(0f, -headerHeight);
+            var scroll = scrollGo.AddComponent<ScrollRect>();
+            scroll.horizontal = false;
+            scroll.movementType = ScrollRect.MovementType.Clamped;
+            scroll.scrollSensitivity = 35f;
+
+            var viewport = NewUi("Viewport", scrollGo.transform);
+            Stretch(viewport);
+            viewport.AddComponent<RectMask2D>();
+            viewport.AddComponent<Image>().color = Color.clear;
+
+            var content = NewUi("Content", viewport.transform);
+            var contentRect = content.GetComponent<RectTransform>();
+            contentRect.anchorMin = new Vector2(0f, 1f);
+            contentRect.anchorMax = new Vector2(1f, 1f);
+            contentRect.pivot = new Vector2(0.5f, 1f);
+            contentRect.sizeDelta = Vector2.zero;
+            var contentLayout = content.AddComponent<VerticalLayoutGroup>();
+            contentLayout.padding = new RectOffset(28, 28, 20, 28);
+            contentLayout.spacing = 12f;
+            SetControl(contentLayout, true, true, true, false);
+            content.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+            var pageTitle = Text(content.transform, "Title", "", 20f, Color.white, TextAlignmentOptions.TopLeft, FontStyles.Bold);
+            pageTitle.textWrappingMode = TextWrappingModes.Normal;
+            var pageBody = Text(content.transform, "Body", "", 14f, UITheme.Text, TextAlignmentOptions.TopLeft);
+            pageBody.textWrappingMode = TextWrappingModes.Normal;
+            pageBody.overflowMode = TextOverflowModes.Overflow;
+            pageBody.lineSpacing = 8f;
+            pageBody.paragraphSpacing = 6f;
+
+            var scrollbar = Scrollbar(scrollGo.transform);
+            scroll.viewport = viewport.GetComponent<RectTransform>();
+            scroll.content = contentRect;
+            scroll.verticalScrollbar = scrollbar;
+            scroll.verticalScrollbarVisibility = ScrollRect.ScrollbarVisibility.AutoHide;
+
+            var controller = root.AddComponent<HelpWindowController>();
+            var so = new SerializedObject(controller);
+            so.FindProperty("window").objectReferenceValue = window;
+            so.FindProperty("dimButton").objectReferenceValue = dimButton;
+            so.FindProperty("closeButton").objectReferenceValue = close;
+            so.FindProperty("openButton").objectReferenceValue = openButton;
+            so.FindProperty("tabContainer").objectReferenceValue = tabs.GetComponent<RectTransform>();
+            so.FindProperty("tabTemplate").objectReferenceValue = template;
+            so.FindProperty("pageTitle").objectReferenceValue = pageTitle;
+            so.FindProperty("pageBody").objectReferenceValue = pageBody;
+            so.FindProperty("pageScroll").objectReferenceValue = scroll;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            template.gameObject.SetActive(false);
+            window.SetActive(false);
         }
 
         // ── Wiring check: F2 window + banner ──────────────────────────────────
