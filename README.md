@@ -1,2 +1,2 @@
-# diplom for college
+# Substation Modeling
 
