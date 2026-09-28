@@ -25,6 +25,16 @@ namespace PlacementSystem
             yaw = euler.y;
         }
 
+        /// <summary>Moves the camera (e.g. when a project is loaded) and keeps mouse-look in sync.</summary>
+        public void SetPose(Vector3 position, Quaternion rotation)
+        {
+            transform.SetPositionAndRotation(position, rotation);
+
+            var euler = rotation.eulerAngles;
+            pitch = euler.x > 180f ? euler.x - 360f : euler.x;
+            yaw = euler.y;
+        }
+
         private void Update()
         {
             if (InteractionLock.ShouldBlockCamera)

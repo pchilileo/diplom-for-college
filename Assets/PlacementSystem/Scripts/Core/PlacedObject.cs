@@ -73,6 +73,10 @@ namespace PlacementSystem
             // Re-cache after prefab is fully initialised
             CacheRenderers();
             RebuildConnectorCache();
+
+            // Wires may be connected in the same frame (e.g. when a project is loaded).
+            foreach (var connector in cachedConnectors)
+                connector.SetOwner(this);
         }
 
         public void NotifyTransformChanged()

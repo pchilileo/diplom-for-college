@@ -254,7 +254,19 @@ namespace PlacementSystem
 
         // ── Wire creation ─────────────────────────────────────────────────────
 
-        private void CreateWire(EnergyConnector a, EnergyConnector b)
+        /// <summary>
+        /// Connects two points with a wire (also used when a saved project is
+        /// loaded). Returns null if the points are the same or already connected.
+        /// </summary>
+        public WireConnection Connect(EnergyConnector a, EnergyConnector b)
+        {
+            if (a == null || b == null || a == b || a.IsConnectedTo(b))
+                return null;
+
+            return CreateWire(a, b);
+        }
+
+        private WireConnection CreateWire(EnergyConnector a, EnergyConnector b)
         {
             // The wire lives as a child of connector A's PlacedObject so it
             // moves with it and is included in its hierarchy (e.g. for saving).
@@ -280,7 +292,7 @@ namespace PlacementSystem
             a.Owner?.NotifyConnectionsChanged();
             b.Owner?.NotifyConnectionsChanged();
 
-            Debug.Log($"[WireConnectionMode] Wire created: {a.name} ↔ {b.name}");
+            return wire;
         }
 
         /// <summary>A new object's connection points join the mode immediately.</summary>

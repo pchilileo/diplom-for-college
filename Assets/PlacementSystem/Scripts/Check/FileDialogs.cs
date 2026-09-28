@@ -16,29 +16,52 @@ namespace PlacementSystem
     /// </summary>
     public static class FileDialogs
     {
-        public static string SaveFile(string title, string defaultName, string extension)
+        /// <param name="filterNameKey">Language key of the file type name shown in the dialog.</param>
+        public static string SaveFile(string title, string defaultName, string extension, string filterNameKey = "FILE_FILTER_SCHEMA")
         {
 #if UNITY_EDITOR
             var path = UnityEditor.EditorUtility.SaveFilePanel(title, DefaultDirectory, defaultName, extension);
-            return string.IsNullOrEmpty(path) ? null : path;
 #elif UNITY_STANDALONE_WIN
-            return ShowWindowsDialog(title, defaultName + "." + extension, extension, save: true);
+            var path = ShowWindowsDialog(title, defaultName + "." + extension, extension, filterNameKey, save: true);
 #else
-            return Path.Combine(Application.persistentDataPath, defaultName + "." + extension);
+            var path = Path.Combine(Application.persistentDataPath, defaultName + "." + extension);
 #endif
+            return EnsureExtension(path, extension);
         }
 
-        public static string OpenFile(string title, string extension)
+        /// <param name="filterNameKey">Language key of the file type name shown in the dialog.</param>
+        public static string OpenFile(string title, string extension, string filterNameKey = "FILE_FILTER_SCHEMA")
         {
 #if UNITY_EDITOR
             var path = UnityEditor.EditorUtility.OpenFilePanel(title, DefaultDirectory, extension);
             return string.IsNullOrEmpty(path) ? null : path;
 #elif UNITY_STANDALONE_WIN
-            return ShowWindowsDialog(title, string.Empty, extension, save: false);
+            return ShowWindowsDialog(title, string.Empty, extension, filterNameKey, save: false);
 #else
-            var path = Path.Combine(Application.persistentDataPath, "schema." + extension);
+            var path = Path.Combine(Application.persistentDataPath, "file." + extension);
             return File.Exists(path) ? path : null;
 #endif
+        }
+
+        /// <summary>
+        /// The Windows dialog appends at most three characters of a default
+        /// extension ("substation" → ".sub"), so the full one is ensured here.
+        /// </summary>
+        private static string EnsureExtension(string path, string extension)
+        {
+            if (string.IsNullOrEmpty(path))
+                return null;
+
+            var wanted = "." + extension;
+            if (path.EndsWith(wanted, StringComparison.OrdinalIgnoreCase))
+                return path;
+
+            // Replace a truncated extension, keep dots that are part of the name.
+            var current = Path.GetExtension(path);
+            if (!string.IsNullOrEmpty(current) && wanted.StartsWith(current, StringComparison.OrdinalIgnoreCase))
+                path = path.Substring(0, path.Length - current.Length);
+
+            return path + wanted;
         }
 
         private static string DefaultDirectory => Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments);
@@ -88,7 +111,7 @@ namespace PlacementSystem
         [DllImport("user32.dll")]
         private static extern IntPtr GetActiveWindow();
 
-        private static string ShowWindowsDialog(string title, string defaultName, string extension, bool save)
+        private static string ShowWindowsDialog(string title, string defaultName, string extension, string filterNameKey, bool save)
         {
             var buffer = Marshal.AllocHGlobal(MaxPath * 2);
             try
@@ -102,7 +125,7 @@ namespace PlacementSystem
                 {
                     lStructSize = Marshal.SizeOf<OpenFileName>(),
                     hwndOwner = GetActiveWindow(),
-                    lpstrFilter = $"{Loc.Get("FILE_FILTER_SCHEMA")} (*.{extension})\0*.{extension}\0{Loc.Get("FILE_FILTER_ALL")} (*.*)\0*.*\0\0",
+                    lpstrFilter = $"{Loc.Get(filterNameKey)} (*.{extension})\0*.{extension}\0{Loc.Get("FILE_FILTER_ALL")} (*.*)\0*.*\0\0",
                     nFilterIndex = 1,
                     lpstrFile = buffer,
                     nMaxFile = MaxPath,

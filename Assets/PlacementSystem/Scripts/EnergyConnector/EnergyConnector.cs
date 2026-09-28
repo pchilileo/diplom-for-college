@@ -22,6 +22,15 @@ namespace PlacementSystem
         /// <summary>The PlacedObject that owns this connector.</summary>
         public PlacedObject Owner { get; private set; }
 
+        /// <summary>
+        /// Set by <see cref="PlacedObject.Initialize"/>: the PlacedObject component is
+        /// added after Instantiate, i.e. after this connector's Awake has run.
+        /// </summary>
+        internal void SetOwner(PlacedObject owner)
+        {
+            Owner = owner;
+        }
+
         /// <summary>Read-only view of active connections.</summary>
         public IReadOnlyList<WireConnection> Connections => connections;
 

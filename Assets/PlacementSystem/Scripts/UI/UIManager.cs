@@ -10,6 +10,7 @@ namespace PlacementSystem
 
         public LeftPanelController LeftPanel => leftPanel;
         public RightPanelController RightPanel => rightPanel;
+        public PlacementAssetDatabase Database => database;
 
         private void Awake()
         {
