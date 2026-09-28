@@ -62,7 +62,11 @@ namespace PlacementSystem
 
             if (WasEscapePressed())
             {
-                HandleEscape();
+                // Escape that already closed a window or cancelled a drag this
+                // frame, or that is about to cancel a drag (object from the list,
+                // gizmo handle — they lock the camera), is not a mode command.
+                if (!InteractionLock.IsEscapeConsumed && !InteractionLock.IsDraggingAsset && !InteractionLock.IsCameraLocked)
+                    HandleEscape();
                 return;
             }
 

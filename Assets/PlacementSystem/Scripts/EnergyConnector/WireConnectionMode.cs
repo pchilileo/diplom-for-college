@@ -142,12 +142,25 @@ namespace PlacementSystem
             SetAllVisible(true);
             SetAllHighlights(EnergyConnector.HighlightState.Available);
 
+            // Equipment may still be placed or deleted while wiring.
+            if (PlacementManager.Instance != null)
+            {
+                PlacementManager.Instance.ObjectSpawned += OnObjectSpawned;
+                PlacementManager.Instance.ObjectRemoved += OnObjectRemoved;
+            }
+
             Debug.Log("[WireConnectionMode] Activated — click a connector to start a wire.");
         }
 
         private void Deactivate()
         {
             isActive = false;
+
+            if (PlacementManager.Instance != null)
+            {
+                PlacementManager.Instance.ObjectSpawned -= OnObjectSpawned;
+                PlacementManager.Instance.ObjectRemoved -= OnObjectRemoved;
+            }
 
             // Reset highlights before hiding so renderers end up in idle state
             SetAllHighlights(EnergyConnector.HighlightState.Idle);
@@ -268,6 +281,33 @@ namespace PlacementSystem
             b.Owner?.NotifyConnectionsChanged();
 
             Debug.Log($"[WireConnectionMode] Wire created: {a.name} ↔ {b.name}");
+        }
+
+        /// <summary>A new object's connection points join the mode immediately.</summary>
+        private void OnObjectSpawned(PlacedObject placed)
+        {
+            foreach (var connector in placed.Connectors)
+            {
+                if (connector == null || allConnectors.Contains(connector))
+                    continue;
+
+                allConnectors.Add(connector);
+                connector.SetVisible(true);
+                connector.SetHighlight(EnergyConnector.HighlightState.Available);
+            }
+        }
+
+        /// <summary>Forget the points of a deleted object (and a wire started from it).</summary>
+        private void OnObjectRemoved(PlacedObject placed)
+        {
+            foreach (var connector in placed.Connectors)
+            {
+                allConnectors.Remove(connector);
+                if (connector == firstConnector)
+                    firstConnector = null;
+                if (connector == hoveredConnector)
+                    hoveredConnector = null;
+            }
         }
 
         // ── Connector management ──────────────────────────────────────────────

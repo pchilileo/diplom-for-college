@@ -144,6 +144,7 @@ namespace PlacementSystem
             }
             else if (IsMenuOpen && WasEscapePressed())
             {
+                InteractionLock.ConsumeEscape();
                 CloseMenu();
             }
         }

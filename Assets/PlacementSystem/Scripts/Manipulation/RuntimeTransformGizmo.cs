@@ -591,6 +591,7 @@ namespace PlacementSystem
         {
             if (WasCancelPressed())
             {
+                InteractionLock.ConsumeEscape();
                 CancelDrag();
                 return;
             }

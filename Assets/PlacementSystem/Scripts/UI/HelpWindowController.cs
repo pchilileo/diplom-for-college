@@ -93,6 +93,7 @@ namespace PlacementSystem
             }
             else if (IsOpen && WasEscapePressed())
             {
+                InteractionLock.ConsumeEscape();
                 Close();
             }
         }

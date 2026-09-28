@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace PlacementSystem
 {
@@ -31,6 +32,22 @@ namespace PlacementSystem
 
         public static bool ShouldBlockCamera    => IsCameraLocked || IsDraggingAsset || IsEditingInspector || IsModalOpen;
         public static bool ShouldBlockSelection => IsDraggingAsset || IsWiringMode || IsModalOpen;
+
+        // ── Escape ────────────────────────────────────────────────────────────
+
+        private static int escapeConsumedFrame = -1;
+
+        /// <summary>
+        /// Call after reacting to Escape (closing a window, cancelling a drag…),
+        /// so nothing else reacts to the same key press in this frame.
+        /// </summary>
+        public static void ConsumeEscape()
+        {
+            escapeConsumedFrame = Time.frameCount;
+        }
+
+        /// <summary>True if Escape was already handled in this frame.</summary>
+        public static bool IsEscapeConsumed => escapeConsumedFrame == Time.frameCount;
 
         public static void SetDraggingAsset(bool value)
         {

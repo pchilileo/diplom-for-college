@@ -11,7 +11,8 @@ namespace PlacementSystem
         [SerializeField] private float moveSpeed = 8f;
         [SerializeField] private float fastMoveMultiplier = 2.5f;
         [SerializeField] private float lookSensitivity = 0.15f;
-        [SerializeField] private float scrollVerticalSpeed = 6f;
+        [Tooltip("How far (metres) one notch of the mouse wheel moves the camera up / down. Shift multiplies it too.")]
+        [SerializeField] private float scrollStep = 1f;
 
         private float pitch;
         private float yaw;
@@ -103,11 +104,13 @@ namespace PlacementSystem
 
             var pointerOverUi = UiPointerUtility.IsPointerOverUi();
 
+            // The wheel is a step per notch, not a speed: a notch lasts a single
+            // frame, so adding it to the per-second movement moved only millimetres.
             if (mouse != null && !pointerOverUi)
             {
                 var scroll = mouse.scroll.ReadValue().y;
                 if (Mathf.Abs(scroll) > 0.01f)
-                    moveInput += Vector3.up * Mathf.Sign(scroll);
+                    transform.position += Vector3.up * (Mathf.Sign(scroll) * scrollStep * (speed / moveSpeed));
             }
 #else
             if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
@@ -127,21 +130,14 @@ namespace PlacementSystem
             if (Input.GetKey(KeyCode.E))
                 moveInput += Vector3.up;
 
-            if (!UiPointerUtility.IsPointerOverUi())
-            {
-                moveInput += Vector3.up * Input.mouseScrollDelta.y;
-            }
+            if (!UiPointerUtility.IsPointerOverUi() && Mathf.Abs(Input.mouseScrollDelta.y) > 0.01f)
+                transform.position += Vector3.up * (Mathf.Sign(Input.mouseScrollDelta.y) * scrollStep * (speed / moveSpeed));
 #endif
 
             if (moveInput.sqrMagnitude < 0.001f)
                 return;
 
             transform.position += moveInput.normalized * (speed * Time.deltaTime);
-
-            if (Mathf.Abs(scrollVerticalSpeed) > 0f && moveInput.y != 0f && moveInput.x == 0f && moveInput.z == 0f)
-            {
-                // Pure vertical movement already handled above.
-            }
         }
     }
 }

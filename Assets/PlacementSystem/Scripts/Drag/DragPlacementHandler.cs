@@ -19,6 +19,16 @@ namespace PlacementSystem
                 sceneCamera = Camera.main;
         }
 
+        private void Update()
+        {
+            // Escape cancels the placement; releasing the mouse afterwards does nothing.
+            if (isDragging && WasEscapePressed())
+            {
+                InteractionLock.ConsumeEscape();
+                CancelDrag();
+            }
+        }
+
         public void BeginDrag(AssetData asset)
         {
             if (asset == null || PlacementManager.Instance == null)
@@ -53,7 +63,8 @@ namespace PlacementSystem
                 return;
             }
 
-            if (TryGetGroundPoint(eventData.position, out var point))
+            // Released over a panel: the ground behind the panel is not a target.
+            if (!UiPointerUtility.IsPointerOverUi() && TryGetGroundPoint(eventData.position, out var point))
             {
                 var spawned = PlacementManager.Instance.CommitPreview(draggingAsset, point);
                 if (spawned != null && SelectionManager.Instance != null)
@@ -77,6 +88,16 @@ namespace PlacementSystem
             draggingAsset = null;
             isDragging = false;
             InteractionLock.SetDraggingAsset(false);
+        }
+
+        private static bool WasEscapePressed()
+        {
+#if ENABLE_INPUT_SYSTEM
+            var keyboard = Keyboard.current;
+            return keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
+#else
+            return Input.GetKeyDown(KeyCode.Escape);
+#endif
         }
 
         private bool TryGetGroundPoint(Vector2 screenPosition, out Vector3 point)

@@ -30,14 +30,7 @@ namespace PlacementSystem.Editor
             EditorUtility.DisplayDialog(
                 "Placement System",
                 "Сцена настроена.\n\n" +
-                "Управление:\n" +
-                "WASD — движение камеры\n" +
-                "Q/E или колёсико — вверх/вниз\n" +
-                "ПКМ — обзор\n" +
-                "Shift — ускорение\n" +
-                "Drag из левой панели — размещение\n" +
-                "ЛКМ по объекту — выделение\n" +
-                "Delete — удаление",
+                "Управление и все функции описаны во встроенной справке: Ctrl+O в режиме Play.",
                 "OK");
 
             Debug.Log("Placement System: setup complete.");
@@ -308,6 +301,16 @@ namespace PlacementSystem.Editor
 
             if (root.GetComponent<UIManager>() == null)
                 root.AddComponent<UIManager>();
+
+            // Editor modes: 1 objects, 2 connect wires, 3 delete wires
+            if (root.GetComponent<WireConnectionMode>() == null)
+                root.AddComponent<WireConnectionMode>();
+
+            if (root.GetComponent<WireDeleteMode>() == null)
+                root.AddComponent<WireDeleteMode>();
+
+            if (root.GetComponent<EditorModeManager>() == null)
+                root.AddComponent<EditorModeManager>();
 
             var placementSo = new SerializedObject(root.GetComponent<PlacementManager>());
             placementSo.FindProperty("previewMaterial").objectReferenceValue = previewMaterial;
