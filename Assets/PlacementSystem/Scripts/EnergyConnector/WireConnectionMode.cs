@@ -1,8 +1,5 @@
 using System.Collections.Generic;
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 namespace PlacementSystem
 {
@@ -63,9 +60,6 @@ namespace PlacementSystem
         // ── Runtime state ─────────────────────────────────────────────────────
 
         private bool isActive;
-
-        /// <summary>True while wire-connection mode is active.</summary>
-        public bool IsActive => isActive;
         private EnergyConnector firstConnector;
 
         // All connectors found in the scene (refreshed each time mode activates)
@@ -148,8 +142,6 @@ namespace PlacementSystem
                 PlacementManager.Instance.ObjectSpawned += OnObjectSpawned;
                 PlacementManager.Instance.ObjectRemoved += OnObjectRemoved;
             }
-
-            Debug.Log("[WireConnectionMode] Activated — click a connector to start a wire.");
         }
 
         private void Deactivate()
@@ -170,15 +162,13 @@ namespace PlacementSystem
             hoveredConnector = null;
 
             InteractionLock.SetWiringMode(false);
-
-            Debug.Log("[WireConnectionMode] Deactivated.");
         }
 
         // ── Hover ─────────────────────────────────────────────────────────────
 
         private void HandleHover()
         {
-            var mousePos = GetMousePosition();
+            var mousePos = InputUtility.MousePosition;
             var hit = PickConnector(mousePos);
 
             if (hit == hoveredConnector)
@@ -199,13 +189,13 @@ namespace PlacementSystem
 
         private void HandleClick()
         {
-            if (!WasPrimaryClickThisFrame() || InteractionLock.AreClicksSuppressed)
+            if (!InputUtility.WasLeftClickPressed || InteractionLock.AreClicksSuppressed)
                 return;
 
             if (UiPointerUtility.IsPointerOverUi())
                 return;
 
-            var mousePos = GetMousePosition();
+            var mousePos = InputUtility.MousePosition;
             var hit = PickConnector(mousePos);
 
             if (hit == null)
@@ -224,7 +214,6 @@ namespace PlacementSystem
                 // ── First endpoint ─────────────────────────────────────────
                 firstConnector = hit;
                 firstConnector.SetHighlight(EnergyConnector.HighlightState.Selected);
-                Debug.Log($"[WireConnectionMode] First connector selected: {hit.name} on {hit.Owner?.name}");
             }
             else
             {
@@ -528,26 +517,6 @@ namespace PlacementSystem
             }
 
             return true;
-        }
-
-        // ── Input helpers ─────────────────────────────────────────────────────
-
-        private static Vector2 GetMousePosition()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
-#else
-            return Input.mousePosition;
-#endif
-        }
-
-        private static bool WasPrimaryClickThisFrame()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame;
-#else
-            return Input.GetMouseButtonDown(0);
-#endif
         }
     }
 }

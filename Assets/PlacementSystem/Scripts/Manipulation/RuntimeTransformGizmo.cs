@@ -1,8 +1,6 @@
 using System;
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 
 namespace PlacementSystem
 {
@@ -333,11 +331,11 @@ namespace PlacementSystem
             hovered = GizmoHandle.None;
 
             // No highlight while looking around with the camera or pointing at the UI.
-            if (IsSecondaryHeld() || UiPointerUtility.IsPointerOverUi() || InteractionLock.ShouldBlockSelection)
+            if (InputUtility.IsRightButtonHeld || UiPointerUtility.IsPointerOverUi() || InteractionLock.ShouldBlockSelection)
                 return;
 
             if (RefreshFrame())
-                hovered = Pick(GetMousePosition());
+                hovered = Pick(InputUtility.MousePosition);
         }
 
         private void HandleModeKeys()
@@ -346,19 +344,9 @@ namespace PlacementSystem
             if (InteractionLock.IsKeyboardCaptured)
                 return;
 
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            if (keyboard == null)
-                return;
-
-            if (keyboard.tKey.wasPressedThisFrame) SetMode(GizmoMode.Translate);
-            else if (keyboard.rKey.wasPressedThisFrame) SetMode(GizmoMode.Rotate);
-            else if (keyboard.yKey.wasPressedThisFrame) SetMode(GizmoMode.Scale);
-#else
-            if (Input.GetKeyDown(KeyCode.T)) SetMode(GizmoMode.Translate);
-            else if (Input.GetKeyDown(KeyCode.R)) SetMode(GizmoMode.Rotate);
-            else if (Input.GetKeyDown(KeyCode.Y)) SetMode(GizmoMode.Scale);
-#endif
+            if (InputUtility.WasKeyPressed(Key.T)) SetMode(GizmoMode.Translate);
+            else if (InputUtility.WasKeyPressed(Key.R)) SetMode(GizmoMode.Rotate);
+            else if (InputUtility.WasKeyPressed(Key.Y)) SetMode(GizmoMode.Scale);
         }
 
         // ── Picking ───────────────────────────────────────────────────────────
@@ -589,20 +577,20 @@ namespace PlacementSystem
 
         private void UpdateDrag()
         {
-            if (WasCancelPressed())
+            if (InputUtility.WasEscapePressed || InputUtility.WasRightClickPressed)
             {
                 InteractionLock.ConsumeEscape();
                 CancelDrag();
                 return;
             }
 
-            if (!IsPrimaryHeld())
+            if (!InputUtility.IsLeftButtonHeld)
             {
                 EndPress();
                 return;
             }
 
-            var mouse = GetMousePosition();
+            var mouse = InputUtility.MousePosition;
             if (!dragging)
             {
                 if ((mouse - pressMouse).magnitude < dragThreshold)
@@ -616,7 +604,7 @@ namespace PlacementSystem
 
         private void ApplyDrag(Vector2 mouse)
         {
-            var snapHeld = IsSnapHeld();
+            var snapHeld = InputUtility.IsCtrlHeld;
             var ray = sceneCamera.ScreenPointToRay(mouse);
 
             switch (active)
@@ -847,57 +835,6 @@ namespace PlacementSystem
 
             var t = Mathf.Clamp01(Vector2.Dot(mouse - a, ab) / lengthSq);
             return Vector2.Distance(mouse, a + ab * t);
-        }
-
-        // ── Input helpers ─────────────────────────────────────────────────────
-
-        private static Vector2 GetMousePosition()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null ? Mouse.current.position.ReadValue() : Vector2.zero;
-#else
-            return Input.mousePosition;
-#endif
-        }
-
-        private static bool IsPrimaryHeld()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null && Mouse.current.leftButton.isPressed;
-#else
-            return Input.GetMouseButton(0);
-#endif
-        }
-
-        private static bool IsSecondaryHeld()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null && Mouse.current.rightButton.isPressed;
-#else
-            return Input.GetMouseButton(1);
-#endif
-        }
-
-        private static bool WasCancelPressed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            var mouse = Mouse.current;
-            return (keyboard != null && keyboard.escapeKey.wasPressedThisFrame)
-                || (mouse != null && mouse.rightButton.wasPressedThisFrame);
-#else
-            return Input.GetKeyDown(KeyCode.Escape) || Input.GetMouseButtonDown(1);
-#endif
-        }
-
-        private static bool IsSnapHeld()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            return keyboard != null && (keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed);
-#else
-            return Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl);
-#endif
         }
     }
 }

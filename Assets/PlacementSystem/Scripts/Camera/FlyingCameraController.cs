@@ -1,7 +1,5 @@
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 
 namespace PlacementSystem
 {
@@ -49,7 +47,6 @@ namespace PlacementSystem
 
         private void HandleLook()
         {
-#if ENABLE_INPUT_SYSTEM
             var mouse = Mouse.current;
             if (mouse == null)
                 return;
@@ -66,19 +63,6 @@ namespace PlacementSystem
             var delta = mouse.delta.ReadValue();
             yaw += delta.x * lookSensitivity;
             pitch -= delta.y * lookSensitivity;
-#else
-            if (Input.GetMouseButtonDown(1))
-                isLooking = true;
-
-            if (Input.GetMouseButtonUp(1))
-                isLooking = false;
-
-            if (!isLooking)
-                return;
-
-            yaw += Input.GetAxis("Mouse X") * lookSensitivity * 10f;
-            pitch -= Input.GetAxis("Mouse Y") * lookSensitivity * 10f;
-#endif
 
             pitch = Mathf.Clamp(pitch, -89f, 89f);
             transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
@@ -88,7 +72,6 @@ namespace PlacementSystem
         {
             var speed = moveSpeed;
 
-#if ENABLE_INPUT_SYSTEM
             var keyboard = Keyboard.current;
             var mouse = Mouse.current;
             if (keyboard == null)
@@ -122,27 +105,6 @@ namespace PlacementSystem
                 if (Mathf.Abs(scroll) > 0.01f)
                     transform.position += Vector3.up * (Mathf.Sign(scroll) * scrollStep * (speed / moveSpeed));
             }
-#else
-            if (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift))
-                speed *= fastMoveMultiplier;
-
-            var moveInput = Vector3.zero;
-            if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.UpArrow))
-                moveInput += transform.forward;
-            if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow))
-                moveInput -= transform.forward;
-            if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.LeftArrow))
-                moveInput -= transform.right;
-            if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow))
-                moveInput += transform.right;
-            if (Input.GetKey(KeyCode.Q))
-                moveInput += Vector3.down;
-            if (Input.GetKey(KeyCode.E))
-                moveInput += Vector3.up;
-
-            if (!UiPointerUtility.IsPointerOverUi() && Mathf.Abs(Input.mouseScrollDelta.y) > 0.01f)
-                transform.position += Vector3.up * (Mathf.Sign(Input.mouseScrollDelta.y) * scrollStep * (speed / moveSpeed));
-#endif
 
             if (moveInput.sqrMagnitude < 0.001f)
                 return;

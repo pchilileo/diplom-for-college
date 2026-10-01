@@ -42,12 +42,13 @@ namespace PlacementSystem
             if (InteractionLock.AreClicksSuppressed)
                 return;
 
-            if (!TryGetPrimaryClick(out var mousePosition))
+            if (!InputUtility.WasLeftClickPressed)
                 return;
 
             if (UiPointerUtility.IsPointerOverUi())
                 return;
 
+            var mousePosition = InputUtility.MousePosition;
             if (transformGizmo != null && transformGizmo.TryHandleClick(mousePosition))
                 return;
 
@@ -107,7 +108,7 @@ namespace PlacementSystem
                 return;
             }
 
-            // FIX: save reference BEFORE Deselect() nulls selectedObject
+            // Keep the reference: the selection is cleared before the object is destroyed.
             var toRemove = selectedObject;
 
             // Clear highlight and selection state first
@@ -118,26 +119,6 @@ namespace PlacementSystem
 
             // Now safe to destroy
             PlacementManager.Instance.Remove(toRemove);
-        }
-
-        private static bool TryGetPrimaryClick(out Vector3 mousePosition)
-        {
-            mousePosition = default;
-
-#if ENABLE_INPUT_SYSTEM
-            var mouse = UnityEngine.InputSystem.Mouse.current;
-            if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
-                return false;
-
-            mousePosition = mouse.position.ReadValue();
-            return true;
-#else
-            if (!Input.GetMouseButtonDown(0))
-                return false;
-
-            mousePosition = Input.mousePosition;
-            return true;
-#endif
         }
     }
 }

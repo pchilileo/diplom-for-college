@@ -2,9 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 
 namespace PlacementSystem
 {
@@ -89,13 +87,13 @@ namespace PlacementSystem
 
         private void Update()
         {
-            if (WasHotkeyPressed() && !InteractionLock.IsEditingInspector)
+            if (InputUtility.IsCtrlHeld && InputUtility.WasKeyPressed(Key.O) && !InteractionLock.IsEditingInspector)
             {
                 // Don't open on top of another window (e.g. the F2 menu).
                 if (IsOpen || !InteractionLock.IsModalOpen)
                     Toggle();
             }
-            else if (IsOpen && WasEscapePressed())
+            else if (IsOpen && InputUtility.WasEscapePressed)
             {
                 InteractionLock.ConsumeEscape();
                 Close();
@@ -211,29 +209,6 @@ namespace PlacementSystem
             colors.highlightedColor = active ? UITheme.AccentBright : UITheme.Hover;
             colors.selectedColor    = colors.normalColor;
             button.colors = colors;
-        }
-
-        // ── Input ─────────────────────────────────────────────────────────────
-
-        private static bool WasHotkeyPressed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            return keyboard != null && keyboard.oKey.wasPressedThisFrame
-                && (keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed);
-#else
-            return Input.GetKeyDown(KeyCode.O) && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
-#endif
-        }
-
-        private static bool WasEscapePressed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            return keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
-#else
-            return Input.GetKeyDown(KeyCode.Escape);
-#endif
         }
     }
 }

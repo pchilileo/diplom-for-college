@@ -2,9 +2,7 @@ using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 
 namespace PlacementSystem
 {
@@ -137,12 +135,12 @@ namespace PlacementSystem
 
         private void Update()
         {
-            if (WasMenuKeyPressed() && !InteractionLock.IsEditingInspector)
+            if (InputUtility.WasKeyPressed(Key.F2) && !InteractionLock.IsEditingInspector)
             {
                 if (IsMenuOpen) CloseMenu();
                 else if (!InteractionLock.IsModalOpen) ShowMainPage();   // not on top of the help window
             }
-            else if (IsMenuOpen && WasEscapePressed())
+            else if (IsMenuOpen && InputUtility.WasEscapePressed)
             {
                 InteractionLock.ConsumeEscape();
                 CloseMenu();
@@ -301,20 +299,11 @@ namespace PlacementSystem
         private System.Collections.IEnumerator ShowPasswordPageWhenMouseReleased(SubstationSchema reference, string path)
         {
             var deadline = Time.unscaledTime + 1f;
-            while (IsPrimaryHeld() && Time.unscaledTime < deadline)
+            while (InputUtility.IsLeftButtonHeld && Time.unscaledTime < deadline)
                 yield return null;
             yield return null;
 
             ShowPasswordPage(reference, path);
-        }
-
-        private static bool IsPrimaryHeld()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return Mouse.current != null && Mouse.current.leftButton.isPressed;
-#else
-            return Input.GetMouseButton(0);
-#endif
         }
 
         private void ShowPasswordPage(SubstationSchema reference, string path)
@@ -496,28 +485,6 @@ namespace PlacementSystem
             colors.highlightedColor = active ? UITheme.AccentBright : UITheme.ButtonHover;
             colors.selectedColor    = colors.normalColor;
             button.colors = colors;
-        }
-
-        // ── Input ─────────────────────────────────────────────────────────────
-
-        private static bool WasMenuKeyPressed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            return keyboard != null && keyboard.f2Key.wasPressedThisFrame;
-#else
-            return Input.GetKeyDown(KeyCode.F2);
-#endif
-        }
-
-        private static bool WasEscapePressed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            return keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
-#else
-            return Input.GetKeyDown(KeyCode.Escape);
-#endif
         }
     }
 }

@@ -2,9 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 
 namespace PlacementSystem
 {
@@ -63,11 +61,10 @@ namespace PlacementSystem
             if (InteractionLock.IsKeyboardCaptured || InteractionLock.IsDraggingAsset || InteractionLock.IsCameraLocked)
                 return;
 
-            ReadHotkeys(out var save, out var saveAs, out var open);
-
-            if (save || saveAs)
-                Save(saveAs || CurrentPath == null);
-            else if (open)
+            // F5 — save, Shift+F5 — save as, F9 — open.
+            if (InputUtility.WasKeyPressed(Key.F5))
+                Save(InputUtility.IsShiftHeld || CurrentPath == null);
+            else if (InputUtility.WasKeyPressed(Key.F9))
                 Open();
         }
 
@@ -278,34 +275,6 @@ namespace PlacementSystem
 
             var connectors = objects[objectIndex].Connectors;
             return connectorIndex >= 0 && connectorIndex < connectors.Count ? connectors[connectorIndex] : null;
-        }
-
-        // ── Input ─────────────────────────────────────────────────────────────
-
-        private static void ReadHotkeys(out bool save, out bool saveAs, out bool open)
-        {
-            save = saveAs = open = false;
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            if (keyboard == null)
-                return;
-
-            var shift = keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed;
-            if (keyboard.f5Key.wasPressedThisFrame)
-            {
-                saveAs = shift;
-                save = !shift;
-            }
-            open = keyboard.f9Key.wasPressedThisFrame;
-#else
-            var shift = Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift);
-            if (Input.GetKeyDown(KeyCode.F5))
-            {
-                saveAs = shift;
-                save = !shift;
-            }
-            open = Input.GetKeyDown(KeyCode.F9);
-#endif
         }
     }
 }

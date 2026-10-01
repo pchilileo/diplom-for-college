@@ -1,8 +1,5 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 namespace PlacementSystem
 {
@@ -22,7 +19,7 @@ namespace PlacementSystem
         private void Update()
         {
             // Escape cancels the placement; releasing the mouse afterwards does nothing.
-            if (isDragging && WasEscapePressed())
+            if (isDragging && InputUtility.WasEscapePressed)
             {
                 InteractionLock.ConsumeEscape();
                 CancelDrag();
@@ -88,16 +85,6 @@ namespace PlacementSystem
             draggingAsset = null;
             isDragging = false;
             InteractionLock.SetDraggingAsset(false);
-        }
-
-        private static bool WasEscapePressed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            return keyboard != null && keyboard.escapeKey.wasPressedThisFrame;
-#else
-            return Input.GetKeyDown(KeyCode.Escape);
-#endif
         }
 
         private bool TryGetGroundPoint(Vector2 screenPosition, out Vector3 point)

@@ -116,7 +116,7 @@ namespace PlacementSystem
         }
 
         /// <summary>Returns the combined world-space bounds of the model renderers.</summary>
-        public Bounds GetWorldBounds()
+        private Bounds GetWorldBounds()
         {
             if (cachedRenderers == null || cachedRenderers.Length == 0)
                 return new Bounds(transform.position, Vector3.one);

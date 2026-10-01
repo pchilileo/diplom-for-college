@@ -2,9 +2,7 @@ using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
-#if ENABLE_INPUT_SYSTEM
 using UnityEngine.InputSystem;
-#endif
 
 namespace PlacementSystem
 {
@@ -125,7 +123,7 @@ namespace PlacementSystem
             // Gizmo drags, undo-less edits etc. — just mirror the transform every frame.
             RefreshValues();
 
-            if (!InteractionLock.IsKeyboardCaptured && WasDeletePressed())
+            if (!InteractionLock.IsKeyboardCaptured && InputUtility.WasKeyPressed(Key.Delete))
                 OnDeleteClicked();
 
             // Objects can't be deleted during a wiring check.
@@ -292,16 +290,6 @@ namespace PlacementSystem
         private void OnDeleteClicked()
         {
             SelectionManager.Instance?.DeleteSelected();
-        }
-
-        private static bool WasDeletePressed()
-        {
-#if ENABLE_INPUT_SYSTEM
-            var keyboard = Keyboard.current;
-            return keyboard != null && keyboard.deleteKey.wasPressedThisFrame;
-#else
-            return Input.GetKeyDown(KeyCode.Delete);
-#endif
         }
     }
 }

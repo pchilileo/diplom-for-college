@@ -1,5 +1,6 @@
 using System.IO;
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 namespace PlacementSystem.Editor
@@ -25,15 +26,13 @@ namespace PlacementSystem.Editor
             var managers = CreateManagers(previewMaterial);
             var canvas = PlacementUIBuilder.Build(managers, database);
 
-            WireManagers(managers, canvas, previewMaterial);
+            WireManagers(managers, canvas);
 
             EditorUtility.DisplayDialog(
                 "Placement System",
                 "Сцена настроена.\n\n" +
                 "Управление и все функции описаны во встроенной справке: Ctrl+O в режиме Play.",
                 "OK");
-
-            Debug.Log("Placement System: setup complete.");
         }
 
         private static void EnsureFolders()
@@ -100,159 +99,18 @@ namespace PlacementSystem.Editor
             return material;
         }
 
-        /// <summary>
-        /// Uses the existing equipment database. Sample furniture data is only
-        /// generated for an empty project — never over a real database.
-        /// </summary>
+        /// <summary>Uses the existing equipment database or creates an empty one.</summary>
         private static PlacementAssetDatabase LoadOrCreateDatabase()
         {
-            var existing = AssetDatabase.LoadAssetAtPath<PlacementAssetDatabase>(DataFolder + "/PlacementAssetDatabase.asset");
-            if (existing != null)
-                return existing;
+            var path = DataFolder + "/PlacementAssetDatabase.asset";
+            var database = AssetDatabase.LoadAssetAtPath<PlacementAssetDatabase>(path);
+            if (database != null)
+                return database;
 
-            return CreateSampleDatabase(CreateSamplePrefabs());
-        }
-
-        private static GameObject[] CreateSamplePrefabs()
-        {
-            var names = new[] { "Chair", "Table", "Lamp", "TV", "Plant", "Vase" };
-            var primitives = new[]
-            {
-                PrimitiveType.Cylinder,
-                PrimitiveType.Cube,
-                PrimitiveType.Sphere,
-                PrimitiveType.Cube,
-                PrimitiveType.Cylinder,
-                PrimitiveType.Sphere
-            };
-
-            var result = new GameObject[names.Length];
-            for (var i = 0; i < names.Length; i++)
-            {
-                var path = $"{PrefabFolder}/{names[i]}.prefab";
-                var existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
-                if (existing != null)
-                {
-                    result[i] = existing;
-                    continue;
-                }
-
-                var go = GameObject.CreatePrimitive(primitives[i]);
-                go.name = names[i];
-                go.transform.localScale = i switch
-                {
-                    0 => new Vector3(0.5f, 0.5f, 0.5f),
-                    1 => new Vector3(1.2f, 0.1f, 0.8f),
-                    2 => new Vector3(0.3f, 0.3f, 0.3f),
-                    3 => new Vector3(1.4f, 0.8f, 0.08f),
-                    4 => new Vector3(0.25f, 0.6f, 0.25f),
-                    _ => new Vector3(0.35f, 0.35f, 0.35f)
-                };
-
-                var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
-                Object.DestroyImmediate(go);
-                result[i] = prefab;
-            }
-
-            return result;
-        }
-
-        private static PlacementAssetDatabase CreateSampleDatabase(GameObject[] prefabs)
-        {
-            var dbPath = DataFolder + "/PlacementAssetDatabase.asset";
-            var database = AssetDatabase.LoadAssetAtPath<PlacementAssetDatabase>(dbPath);
-            if (database == null)
-                database = ScriptableObject.CreateInstance<PlacementAssetDatabase>();
-
-            var furniture = GetOrCreateCategory("Furniture", DataFolder + "/Category_Furniture.asset");
-            var tech = GetOrCreateCategory("Tech", DataFolder + "/Category_Tech.asset");
-            var decor = GetOrCreateCategory("Decor", DataFolder + "/Category_Decor.asset");
-
-            var furnitureAssets = new[]
-            {
-                CreateAssetData("Chair", prefabs[0], furniture, DataFolder + "/Asset_Chair.asset"),
-                CreateAssetData("Table", prefabs[1], furniture, DataFolder + "/Asset_Table.asset")
-            };
-
-            var techAssets = new[]
-            {
-                CreateAssetData("Lamp", prefabs[2], tech, DataFolder + "/Asset_Lamp.asset"),
-                CreateAssetData("TV", prefabs[3], tech, DataFolder + "/Asset_TV.asset")
-            };
-
-            var decorAssets = new[]
-            {
-                CreateAssetData("Plant", prefabs[4], decor, DataFolder + "/Asset_Plant.asset"),
-                CreateAssetData("Vase", prefabs[5], decor, DataFolder + "/Asset_Vase.asset")
-            };
-
-            SetCategoryAssets(furniture, furnitureAssets);
-            SetCategoryAssets(tech, techAssets);
-            SetCategoryAssets(decor, decorAssets);
-
-            if (AssetDatabase.LoadAssetAtPath<PlacementAssetDatabase>(dbPath) == null)
-                AssetDatabase.CreateAsset(database, dbPath);
-
-            var serialized = new SerializedObject(database);
-            var categoriesProp = serialized.FindProperty("categories");
-            categoriesProp.arraySize = 3;
-            categoriesProp.GetArrayElementAtIndex(0).objectReferenceValue = furniture;
-            categoriesProp.GetArrayElementAtIndex(1).objectReferenceValue = tech;
-            categoriesProp.GetArrayElementAtIndex(2).objectReferenceValue = decor;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-
-            EditorUtility.SetDirty(database);
+            database = ScriptableObject.CreateInstance<PlacementAssetDatabase>();
+            AssetDatabase.CreateAsset(database, path);
             AssetDatabase.SaveAssets();
             return database;
-        }
-
-        private static AssetCategory GetOrCreateCategory(string name, string path)
-        {
-            var category = AssetDatabase.LoadAssetAtPath<AssetCategory>(path);
-            if (category == null)
-                category = ScriptableObject.CreateInstance<AssetCategory>();
-
-            var serialized = new SerializedObject(category);
-            serialized.FindProperty("categoryName").stringValue = name;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-
-            if (AssetDatabase.LoadAssetAtPath<AssetCategory>(path) == null)
-                AssetDatabase.CreateAsset(category, path);
-
-            EditorUtility.SetDirty(category);
-            return category;
-        }
-
-        private static AssetData CreateAssetData(string name, GameObject prefab, AssetCategory category, string path)
-        {
-            var data = AssetDatabase.LoadAssetAtPath<AssetData>(path);
-            if (data == null)
-                data = ScriptableObject.CreateInstance<AssetData>();
-
-            var serialized = new SerializedObject(data);
-            serialized.FindProperty("displayName").stringValue = name;
-            serialized.FindProperty("prefab").objectReferenceValue = prefab;
-            serialized.FindProperty("categoryRef").objectReferenceValue = category;
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-
-            if (AssetDatabase.LoadAssetAtPath<AssetData>(path) == null)
-                AssetDatabase.CreateAsset(data, path);
-
-            data.SetCategory(category);
-            EditorUtility.SetDirty(data);
-            return data;
-        }
-
-        private static void SetCategoryAssets(AssetCategory category, AssetData[] assets)
-        {
-            var serialized = new SerializedObject(category);
-            var assetsProp = serialized.FindProperty("assets");
-            assetsProp.arraySize = assets.Length;
-            for (var i = 0; i < assets.Length; i++)
-                assetsProp.GetArrayElementAtIndex(i).objectReferenceValue = assets[i];
-
-            serialized.ApplyModifiedPropertiesWithoutUndo();
-            EditorUtility.SetDirty(category);
         }
 
         private static void ConfigureGroundPlane()
@@ -319,7 +177,7 @@ namespace PlacementSystem.Editor
             return root;
         }
 
-        private static void WireManagers(GameObject managers, GameObject canvas, Material previewMaterial)
+        private static void WireManagers(GameObject managers, GameObject canvas)
         {
             var camera = Camera.main;
             var selection = managers.GetComponent<SelectionManager>();
@@ -339,14 +197,9 @@ namespace PlacementSystem.Editor
             gizmoSo.FindProperty("sceneCamera").objectReferenceValue = camera;
             gizmoSo.ApplyModifiedPropertiesWithoutUndo();
 
-            var placementSo = new SerializedObject(managers.GetComponent<PlacementManager>());
-            placementSo.FindProperty("previewMaterial").objectReferenceValue = previewMaterial;
-            placementSo.ApplyModifiedPropertiesWithoutUndo();
-
             EditorUtility.SetDirty(managers);
             EditorUtility.SetDirty(canvas);
-            UnityEditor.SceneManagement.EditorSceneManager.MarkSceneDirty(
-                UnityEditor.SceneManagement.EditorSceneManager.GetActiveScene());
+            EditorSceneManager.MarkSceneDirty(EditorSceneManager.GetActiveScene());
         }
     }
 }

@@ -14,10 +14,5 @@ namespace PlacementSystem
         public GameObject Prefab => prefab;
         public Sprite Icon => icon;
         public AssetCategory CategoryRef => categoryRef;
-
-        public void SetCategory(AssetCategory category)
-        {
-            categoryRef = category;
-        }
     }
 }

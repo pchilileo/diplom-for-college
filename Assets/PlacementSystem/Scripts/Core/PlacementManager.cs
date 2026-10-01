@@ -1,5 +1,4 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace PlacementSystem
@@ -11,12 +10,10 @@ namespace PlacementSystem
         [SerializeField] private GridSnapSettings snapSettings = GridSnapSettings.Default;
         [SerializeField] private Material previewMaterial;
 
-        private readonly Dictionary<string, PlacedObject> placedObjects = new();
         private int nextId = 1;
         private GameObject previewInstance;
 
         public GridSnapSettings SnapSettings => snapSettings;
-        public Material PreviewMaterial => previewMaterial;
 
         public event Action<PlacedObject> ObjectSpawned;
         public event Action<PlacedObject> ObjectRemoved;
@@ -55,19 +52,13 @@ namespace PlacementSystem
 
             var id = GenerateId();
             placed.Initialize(data, id);
-            placedObjects[id] = placed;
 
-            // FIX: lift the object so its bottom sits on the ground plane
+            // Lift the object so its bottom sits on the ground plane
             LiftToGround(placed);
 
             // Colliders are created by PlacedObject itself (see PlacedObject.EnsureColliders).
             ObjectSpawned?.Invoke(placed);
             return placed;
-        }
-
-        public PlacedObject Spawn(AssetData data, Vector3 position)
-        {
-            return Spawn(data, position, Quaternion.identity, Vector3.one);
         }
 
         // ── Preview ────────────────────────────────────────────────────────────
@@ -93,7 +84,7 @@ namespace PlacementSystem
 
             position = snapSettings.SnapPosition(position);
 
-            // FIX: offset preview so its bottom sits on the surface, not its pivot
+            // Offset the preview so its bottom sits on the surface, not its pivot
             var offset = GetPivotToBottomOffset(previewInstance);
             previewInstance.transform.position = position + Vector3.up * offset;
         }
@@ -123,14 +114,8 @@ namespace PlacementSystem
             if (placedObject == null)
                 return;
 
-            placedObjects.Remove(placedObject.ObjectId);
             ObjectRemoved?.Invoke(placedObject);
             Destroy(placedObject.gameObject);
-        }
-
-        public bool TryGetById(string id, out PlacedObject placedObject)
-        {
-            return placedObjects.TryGetValue(id, out placedObject);
         }
 
         // ── Helpers ────────────────────────────────────────────────────────────
